@@ -5,7 +5,6 @@
     <button class="tab" role="tab" data-tab="vybor" aria-selected="false"><span class="n">2</span>Что проверяем</button>
     <button class="tab" role="tab" data-tab="zayavka" aria-selected="false"><span class="n">3</span>Готовая заявка <span id="cnt" class="chip" hidden></span></button>
     <button class="tab sec" role="tab" data-tab="pamyatka" aria-selected="false">Памятка</button>
-    <button class="tab sec" role="tab" data-tab="lab" aria-selected="false">Для лаборатории</button>
   </nav>
 </div></header>
 
@@ -19,16 +18,16 @@
     <div class="field"><label for="c_org">Наименование организации</label><input type="text" id="c_org" data-c="org" autocomplete="organization"><span class="help">Полное и(или) краткое, как в договоре. Например: Общество с ограниченной ответственностью «Пример» (ООО «Пример»).</span></div>
     <div class="field"><label for="c_inn">ИНН</label><input type="text" id="c_inn" data-c="inn" inputmode="numeric" maxlength="12" pattern="\d{10}|\d{12}" minlength="10" required><span class="help" id="innHelp">10 цифр у организации (ООО/АО) или 12 цифр у ИП.</span></div>
     <div class="field full"><label for="c_legal">Юридический адрес</label><input type="text" id="c_legal" data-c="legal"><span class="help">Как в выписке из ЕГРЮЛ или ЕГРИП. Начните с почтового индекса (6 цифр); если в выписке индекса нет — возьмите его на почте России по адресу.</span></div>
-    <div class="field full"><label for="c_actual">Фактический адрес</label><input type="text" id="c_actual" data-c="actual"><span class="help">Адрес места осуществления деятельности (производство, офис, объект). Этот адрес попадёт в акт отбора. <button class="btn sm ghost" data-act="same-addr">Совпадает с юридическим</button></span></div>
-    <div class="field full"><label for="c_contact">Кто согласует заявку</label><input type="text" id="c_contact" data-c="contact"><span class="help">ФИО, должность, телефон, e-mail.</span></div>
-    <div class="field"><label for="c_cno">Номер договора</label><input type="text" id="c_cno" data-c="cno" placeholder="например, 123/2026-ТД"><span class="help">Номер и дату договора возьмите в своём экземпляре договора.</span></div>
+    <div class="field full"><label for="c_actual">Фактический адрес</label><input type="text" id="c_actual" data-c="actual"><span class="help">Адрес места осуществления деятельности. <button class="btn sm ghost" data-act="same-addr">Совпадает с юридическим</button></span></div>
+    <div class="field full"><label for="c_contact">Контактные данные заказчика для согласования заявки</label><input type="text" id="c_contact" data-c="contact"><span class="help">ФИО, должность, телефон, e-mail.</span></div>
+    <div class="field"><label for="c_cno">Номер договора</label><input type="text" id="c_cno" data-c="cno" placeholder="например, 09/25-01/2026"><span class="help">Номер и дату договора возьмите в своём экземпляре договора.</span></div>
     <div class="field"><label for="c_cdate">Дата договора</label><input type="text" id="c_cdate" data-c="cdate" placeholder="дд.мм.гггг"><span class="help">В формате дд.мм.гггг, например 15.04.2026.</span></div>
   </div></div>
   <div class="card"><div class="grid2">
-    <div class="field full"><span class="legend">Цель испытаний</span><div class="choices" id="g_purpose"></div><span class="help">От цели зависит редакция ГОСТ для Salmonella и Listeria в заявке: «Декларирование» → ГОСТ 31659-2012 и ГОСТ 32031-2012; «Производственный контроль» и другие → ГОСТ 31659-2024 и ГОСТ 32031-2022 (информационное письмо ИЛ ООО «ВИКИНГ» № 19/02-03/2026 от 19.02.2026).</span></div>
-    <div class="field"><span class="legend">Кто отберёт пробы</span><div class="choices" id="g_sampler"></div><span class="help">Если отбор ваш, лаборатория не несёт ответственность за стадию отбора и доставки.</span></div>
-    <div class="field"><span class="legend">Методики испытаний</span><span class="help">Методики подбирает лаборатория и согласует с вами в заявке. Вы отвечаете за выбор показателей и нормативов. НД на отбор проб заполнятся автоматически.</span></div>
-    <div class="field full"><label for="c_place">Адрес места отбора проб или проведения измерений</label><input type="text" id="c_place" data-c="place"><span class="help">Заполняется, если пробы отбирает специалист ИЛ. Укажите адрес, этаж/помещение, кто встретит и его телефон. Обычно совпадает с фактическим адресом. <button class="btn sm ghost" data-act="place-actual">Как фактический адрес</button></span></div>
+    <div class="field full"><span class="legend">Цель испытаний</span><div class="choices" id="g_purpose"></div><span class="help">От цели зависит редакция ГОСТ для Salmonella и Listeria в заявке: «Декларирование» → ГОСТ 31659-2012 и ГОСТ 32031-2012; «Производственный контроль» и другие → ГОСТ 31659-2024 и ГОСТ 32031-2022 (<a href="#" data-act="show-letter" class="letterlink">информационное письмо ИЛ ООО «ВИКИНГ» № 19/02-03/2026 от 19.02.2026</a>).</span></div>
+    <div class="field"><span class="legend">Отбор образца(ов) осуществит <span class="sub">(отметить нужное)</span></span><div class="choices" id="g_sampler"></div><span class="help">«Специалист ИЛ» — пробы отбирает лаборатория: ниже укажите адрес и контакт человека на месте. «Заказчик» — пробы отбираете вы сами: акт отбора вы оформляете самостоятельно, а лаборатория не несёт ответственность за стадию отбора и доставки.</span></div>
+    <div class="field"><span class="legend">Оптимальные методы (методики) испытаний (измерений) выбирает</span><div class="choices" id="g_methods"></div><span class="help"><b>ИЛ ООО «ВИКИНГ»</b> — в этом случае методики указываются в заявке сотрудником лаборатории и согласовываются с заказчиком.<br><b>Заказчик</b> — в этом случае методики указываются в заявке заказчиком и согласовываются сотрудником лаборатории.</span></div>
+    <div class="field full"><label for="c_place">Адрес места отбора проб или проведения измерений</label><input type="text" id="c_place" data-c="place"><span class="help">Заполняется, если пробы отбирает специалист ИЛ. Укажите адрес, этаж/помещение, кто встретит и его телефон. <button class="btn sm ghost" data-act="place-actual">Как фактический адрес</button></span></div>
   </div></div>
   <div class="card"><h3 style="margin-top:0">Раздел IV. Согласование с заказчиком</h3>
     <p class="help" style="color:var(--muted);font-size:13px;margin:0 0 10px">По умолчанию все галочки проставлены ☒ — так заявка сразу готова к печати. Снимите те пункты, с которыми не согласны.</p>
@@ -69,7 +68,6 @@
 </section>
 
 <section id="p-pamyatka" class="sect doc" role="tabpanel" hidden>__MEMO__</section>
-<section id="p-lab" class="sect doc" role="tabpanel" hidden>__LAB__</section>
 </main>
 
 <div class="bar" id="bar" hidden><div class="wrap">
@@ -81,3 +79,15 @@
   <span><button class="btn" id="btnPrint">Печать</button> <button class="btn ghost" id="btnPrintClose">Закрыть</button></span>
   <span class="ph">A4, альбомная ориентация. Нажмите «Печать» или Ctrl+P / ⌘+P в браузере.</span>
 </div><div id="printArea" aria-label="Печатная заявка"></div></div>
+<div id="letterWrap" class="lwrap" hidden><div class="lcard">
+  <div class="lhead"><b>Информационное письмо ИЛ ООО «ВИКИНГ»</b><button class="btn ghost sm" data-act="close-letter">Закрыть</button></div>
+  <div class="lbody">
+    <p style="text-align:center;font-weight:bold;margin:0 0 4px">ИСПЫТАТЕЛЬНАЯ ЛАБОРАТОРИЯ ООО «ВИКИНГ»</p>
+    <p style="text-align:center;margin:0 0 12px;font-size:12.5px;color:var(--muted)">Уникальный номер записи в реестре аккредитованных лиц RA.RU.22АД70 от 29.10.2015</p>
+    <p style="text-align:center;font-weight:bold;margin:0 0 12px">Информационное письмо № 19/02-03/2026 от 19.02.2026</p>
+    <p>Информируем Вас о том, что согласно системе менеджмента качества, ИЛ ООО «ВИКИНГ» применяет в своей деятельности последние действующие редакции методов, за исключением случаев, когда их применение является нецелесообразным или невозможным. К таким случаям относится использование отменённых НД, но не исключённых из области аккредитации ИЛ и применяющихся для целей технического регулирования (т.е. не исключены из Перечня стандартов, содержащих правила и методы исследований (испытаний) и измерений, в том числе правила отбора образцов, необходимые для применения и исполнения требований технического регламента и осуществления оценки (подтверждения) соответствия продукции).</p>
+    <p>Таким образом, при проведении испытаний пищевой продукции <b>с целью декларирования</b> ИЛ ООО «ВИКИНГ» использует отменённые ГОСТ 31659-2012 «Продукты пищевые. Метод выявления бактерий рода Salmonella» и ГОСТ 32031-2012 «Продукты пищевые. Методы выявления бактерий Listeria monocytogenes».</p>
+    <p>При проведении испытаний <b>в иных целях</b>, например производственного контроля, ИЛ ООО «ВИКИНГ» использует последние действующие редакции методов: ГОСТ 31659-2024 «Микробиология пищевой цепи. Горизонтальный метод обнаружения, подсчёта и серотипирования бактерий рода Salmonella. Часть 1. Обнаружение Salmonella spp» и ГОСТ 32031-2022 «Продукты пищевые. Методы выявления бактерий Listeria monocytogenes и других видов Listeria (Listeria spp.)».</p>
+    <p style="margin-top:16px">Руководитель ИЛ ООО «ВИКИНГ» &nbsp;_____________________&nbsp; Ефремова Е.В.</p>
+  </div>
+</div></div>

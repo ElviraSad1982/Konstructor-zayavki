@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Конструктор заявки</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -94,6 +95,13 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .bar .wrap{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;padding-inline:0}
 .hl{background:var(--warn-soft);border-radius:2px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:76px;background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:4px;z-index:40;font-size:14px;max-width:90vw}
+.lwrap{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.5);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 16px}
+.lcard{background:var(--surface);color:var(--ink);border:1px solid var(--line);max-width:720px;width:100%;border-radius:8px;box-shadow:0 12px 44px rgba(0,0,0,.4);margin:auto}
+.lhead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface);border-radius:8px 8px 0 0}
+.lhead b{font-size:15px}
+.lbody{padding:16px 20px;line-height:1.5;font-size:14px}
+.lbody p{margin:0 0 10px}
+a.letterlink{color:var(--accent);text-decoration:underline;cursor:pointer}
 .pv{padding:0}
 .pv table{font-size:13px}
 .pv td,.pv th{border:1px solid var(--line);white-space:pre-wrap}
@@ -128,6 +136,9 @@ ul.clean li{margin:3px 0}
 #printArea h2{font-size:10.5pt;margin:12px 0 4px;font-weight:bold}
 #printArea .reg{border:1px solid #000;padding:6px 10px;width:62mm;margin-left:auto;margin-bottom:10px;font-size:10pt}
 #printArea table{width:100%;border-collapse:collapse;margin:4px 0}
+#printArea tr{page-break-inside:avoid}
+#printArea td,#printArea th{page-break-inside:avoid}
+#printArea h2{page-break-after:avoid}
 #printArea table.pt td,#printArea table.pt th{border:1px solid #000;padding:3px 5px;vertical-align:top;font-size:9.5pt;color:#000;word-wrap:break-word;overflow-wrap:anywhere}
 #printArea table.pt th{background:#efefef;font-weight:bold;text-align:center;font-size:9pt}
 #printArea table.obj{table-layout:fixed}
