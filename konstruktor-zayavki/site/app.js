@@ -250,12 +250,12 @@ function trAdd(){
 
 /* basket */
 function catKind(a){var c=a.cat||'';if(c==='Смывы')return 'smyv';if(c==='Вода')return 'water';if(c==='Воздух')return /холодильн|морозильн/i.test(a.name||'')?'cold':'air';if(c==='Медицина')return 'med';if(c==='Холодильные камеры')return 'cold';if(c==='Физические факторы')return 'phys';if(c==='Дезинфекция')return 'dez';if(c==='Биотесты')return 'bio';if(c==='Стерильность')return 'ster';return 'food'}
-function qtyExample(k){return {food:'Количество образцов',smyv:'Например: 10 смывов',water:'Например: 2 пробы по 500 мл',air:'Например: 5 проб воздуха',med:'Например: 5 единиц ИМН',cold:'Например: 1 камера, 3 точки',phys:'Например: 5 РМ или 3 помещения',dez:'',bio:'Например: 5 биотестов',ster:'Например: 5 единиц ИМН'}[k]||'Число образцов, масса или объём'}
+function qtyExample(k){return {food:'Количество образцов',smyv:'Например: 10 смывов',water:'Например: 2 пробы по 500 мл',air:'Например: 5 проб воздуха',med:'Например: 5 единиц ИМН',cold:'Например: 1 камера, 3 точки',phys:'Например: 5 РМ или 3 помещения',dez:'',bio:'Например: 1 стерилизатор',ster:'Например: 5 единиц ИМН'}[k]||'Число образцов, масса или объём'}
 function noteExample(k){return {food:'Партия (при необходимости)',smyv:'Точка отбора: цех, посуда, инвентарь, руки персонала',water:'Точка отбора: ЦВС на входе, точка разбора, после фильтра',air:'Точка отбора воздуха: кабинет №, помещение',med:'Что отбирается: инструмент, эндоскоп; способ стерилизации',cold:'Номер камеры, что хранится, температура',phys:'РМ или помещение, адрес, число точек',dez:'Концентрация рабочего раствора; приложить инструкцию к дезсредству',bio:'Марка и объём стерилизатора',ster:'Что отбирается (ИМН, инструмент), способ стерилизации'}[k]||'Пояснения к образцу'}
-function sameItem(a){for(var i=0;i<S.basket.length;i++){var b=S.basket[i];if(b.name===a.name&&b.nd===a.nd)return b}return null}
 function addItem(a,on,extras){
-  var dup=sameItem(a);
-  if(dup){toast('Этот набор уже в заявке — изменить его можно ниже'); return dup}
+  /* Один и тот же набор можно добавлять несколько раз: заказчику нужны
+     отдельные строки под разное количество и разные точки отбора
+     (например 5 смывов на БГКП и 3 на стафилококк). */
   var inds=[];a.items.forEach(function(it,i){if(on[i])inds.push({ind:it.ind,meth:it.meth,norm:it.norm,on:true})});
   var k=catKind(a);
   extras=extras||{};
@@ -348,7 +348,7 @@ function kvRows(list,prefix){
 
 function renderFinal(){
   var box=$('#final');
-  if(!S.basket.length){box.innerHTML='<div class="card empty">В заявке пока нет строк. <button class="btn pri" data-act="goto" data-to="vybor">Выбрать, что проверять</button></div>';return}
+  if(!S.basket.length){box.innerHTML='<div class="card empty">В заявке пока нет строк. <button class="btn pri" data-act="goto" data-to="vybor">Выбрать, что проверять</button></div>';$('#finaltail').hidden=true;return}
   var t=totals(),rows=S.basket.map(function(b,i){return rowData(b,i+1)});
   var h='<div class="info">Строк: <b>'+t.rows+'</b>, показателей: <b>'+t.ind+'</b>. Счёт выставляется по каждому показателю, проверьте список перед отправкой.</div>';
   /* items editor */
@@ -367,22 +367,16 @@ function renderFinal(){
   });
   h+='</div><div class="row"><button class="btn" data-act="goto" data-to="vybor">Добавить ещё</button></div>';
   /* Что дальше */
-  h+='<h3 style="margin-top:8px">Что делать дальше</h3><div class="info">Проверьте список выше — он равен тому, что будет напечатано. Ниже две равнозначные дороги: распечатать прямо отсюда или скопировать в ваш Word-бланк. Выберите удобную.</div>';
-  h+='<div class="note"><b>Сначала скачайте файл.</b> Страница ничего не сохраняет: после закрытия или перезагрузки вкладки введённое пропадает. Скачайте готовую заявку (кнопка «Скачать Word» ниже) и сохраните её у себя — все дальнейшие правки вносите уже в скачанном файле в Word.</div>';
-  /* print */
-  h+='<div class="card" style="margin-top:12px"><b>Способ 1. Скачать Word-файл</b><p class="help" style="color:var(--muted);font-size:13px;margin:4px 0 10px">Готовая заявка в формате .docx: откройте в Word, при необходимости поправьте, напечатайте и подпишите. A4, альбомная ориентация.</p><div class="row"><button class="btn pri" data-act="docx">Скачать Word (.docx)</button></div></div>';
-  h+='<div class="card" style="margin-top:12px"><b>Способ 2. Напечатать прямо из браузера</b><p class="help" style="color:var(--muted);font-size:13px;margin:4px 0 10px">Откроется печатный вид в утверждённой форме. Нажмите «Печать» или Ctrl+P / ⌘+P. В окне печати можно выбрать «Сохранить как PDF».</p><div class="row"><button class="btn" data-act="print">Открыть вид для печати</button></div></div>';
+  h+='<h3 style="margin-top:8px">Что делать дальше</h3><div class="info">Проверьте список выше — он равен тому, что попадёт в файл. Скачайте заявку в Word, подпишите и отправьте специалисту по работе с клиентами.</div>';
+  h+='<div class="note"><b>Сначала скачайте файл.</b> Страница ничего не сохраняет: после закрытия или перезагрузки вкладки введённое пропадает. Скачайте готовую заявку (кнопка ниже) и сохраните её у себя — все дальнейшие правки вносите уже в скачанном файле в Word.</div>';
   /* word */
-  h+='<div class="card" style="margin-top:12px"><b>Способ 3. Скопировать в ваш Word-бланк вручную</b><p class="help" style="color:var(--muted);font-size:13px;margin:4px 0 10px">Это для тех, кто хочет вставить готовый текст в утверждённую форму в Word. Откройте ваш Word-бланк, установите курсор в нужный раздел и нажмите соответствующую кнопку. Вставка: Ctrl+V (⌘+V). Если Word вставил только текст без таблицы — попробуйте «Специальная вставка → Форматированный текст (RTF)».</p>';
-  h+='<div class="two"><div><b style="font-size:13px">Раздел I. Информация о заказчике</b><div class="row" style="margin-top:4px"><button class="btn" data-act="cp1">Копировать раздел I</button></div></div>';
-  h+='<div><b style="font-size:13px">Раздел II. Цель, отбор, методики</b><div class="row" style="margin-top:4px"><button class="btn" data-act="cp2">Копировать раздел II</button></div></div></div>';
-  h+='<div style="margin-top:10px"><b style="font-size:13px">Раздел III. Строки с объектами испытаний</b><div class="row" style="margin-top:4px"><button class="btn pri" data-act="cp3">Копировать строки</button><button class="btn" data-act="cp3h">С заголовком таблицы</button></div><div class="help" style="color:var(--muted);font-size:12.5px;margin-top:4px">«Копировать строки» — для вставки в уже готовую таблицу бланка. «С заголовком» — если таблицы ещё нет.</div></div></div>';
+  h+='<div class="card" style="margin-top:12px"><b>Скачать заявку в Word</b><p class="help" style="color:var(--muted);font-size:13px;margin:4px 0 10px">Готовая заявка в формате .docx: откройте в Word, при необходимости поправьте, напечатайте и подпишите. A4, альбомная ориентация.</p><div class="row"><button class="btn pri" data-act="docx">Скачать Word (.docx)</button></div></div>';
   h+='<div class="tw pv" style="margin-top:12px">'+tableHTML(rows,true)+'</div>';
   /* agreement */
   h+='<h3 style="margin-top:16px">Приложение для согласования показателей</h3><p class="lead" style="margin-bottom:8px">Отдельный лист, он не входит в утверждённый бланк. Отправляется вместе с заявкой, чтобы заказчик видел и согласовал показатели и нормативы.</p><div class="info">'+esc(AGREE_TXT)+'</div>'+agreeView()+'<div class="row" style="margin:10px 0"><button class="btn pri" data-act="cpAgree">Копировать таблицу согласования</button><span style="color:var(--muted);font-size:13px">Вставить в Word: Ctrl+V. Если вставилось текстом — Специальная вставка → RTF.</span></div>';
-  /* Итог */
-  h+='<h3 style="margin-top:16px">Итог</h3><div class="card"><ol style="margin:0;padding-left:22px;line-height:1.6"><li>Распечатайте заявку (Способ 1) или вставьте её в Word-бланк и распечатайте (Способ 2).</li><li>Подпишите у руководителя или уполномоченного лица, поставьте печать.</li><li>Пришлите нам сканом на почту <a href="mailto:info@laboratoriya-viking.ru"><b>info@laboratoriya-viking.ru</b></a> или привезите оригинал. Контакты и адрес — на сайте <a href="https://www.laboratoriya-viking.ru/" target="_blank" rel="noopener">laboratoriya-viking.ru</a>.</li><li>Специалист лаборатории проверит заявку, при необходимости свяжется с вами и согласует правило принятия решения (заключение о соответствии), если оно нужно.</li><li>Никаких данных страница вам не отправляет и не сохраняет: после закрытия вкладки введённое пропадает. Если нужно вернуться — распечатайте заявку заранее.</li></ol></div>';
   box.innerHTML=h;
+  /* Раздел IV и Итог — статическая разметка ниже, показываем вместе со строками */
+  $('#finaltail').hidden=false;
 }
 
 
@@ -441,24 +435,10 @@ function printHTML(){
   h+='</td></tr>';
   h+='<tr><td>С вышеперечисленными условиями проведения испытаний (измерений) '+consent+'<br><span class="sub">(Должность / ФИО / подпись)</span></td><td style="height:18mm">&nbsp;</td></tr>';
   h+='</table>';
-  // V. Анализ заявки (заполняется лабораторией) — как в утверждённом бланке
-  h+='<h2>V. Анализ заявки (заполняется лабораторией):</h2><table class="pt agr"><colgroup><col style="width:70%"><col></colgroup>';
-  h+='<tr><td>Наличие персонала для проведения испытаний (измерений):</td><td>☐ Да &nbsp;&nbsp;&nbsp; ☐ Нет</td></tr>';
-  h+='<tr><td>Соответствует области аккредитации ИЛ ООО «ВИКИНГ»:</td><td>☐ Да &nbsp;&nbsp;&nbsp; ☐ Нет</td></tr>';
-  h+='<tr><td>Соответствие материально-технической базы ИЛ требованиям методик выполнения испытаний (измерений):</td><td>☐ Да &nbsp;&nbsp;&nbsp; ☐ Нет</td></tr>';
-  h+='<tr><td>Работа может быть выполнена в установленный срок:</td><td>☐ Да &nbsp;&nbsp;&nbsp; ☐ Нет</td></tr>';
-  h+='<tr><td>Конфликт интересов обнаружен:</td><td>☐ Да &nbsp;&nbsp;&nbsp; ☐ Нет</td></tr>';
-  h+='<tr><td>Документы предоставлены (копия ТУ, СТО, тех. карта):</td><td>☐ В полном объёме &nbsp;&nbsp;&nbsp; ☐ Не в полном объёме</td></tr>';
-  h+='<tr><td>Необходимость привлечения субподрядной лаборатории:</td><td>☐ Да &nbsp;&nbsp;&nbsp; ☐ Нет</td></tr>';
-  h+='<tr><td>Решение по анализу заявки:</td><td>☐ Принято в работу &nbsp;&nbsp;&nbsp; ☐ Отклонено</td></tr>';
-  h+='<tr><td colspan="2">В случае отклонения заявки указать причину:<div style="height:12mm"></div></td></tr>';
-  h+='<tr><td colspan="2">Анализ заявки испытаний (измерений) провёл сотрудник ИЛ ООО «ВИКИНГ»: &nbsp;&nbsp; Должность _____________________ &nbsp;&nbsp; ФИО _____________________ &nbsp;&nbsp; Подпись _____________ &nbsp;&nbsp; Дата __________</td></tr>';
-  h+='<tr><td colspan="2">В случае внесения изменений в заявку указать номер заявки взамен:</td></tr>';
-  h+='</table>';
+  /* Раздел V (анализ заявки лабораторией) из выгрузки убран: в .docx его
+     квадраты ☐ — обычные символы, отметить их в Word нельзя. */
   return h;
 }
-function openPrint(){var w=$('#printWrap');$('#printArea').innerHTML=printHTML();w.hidden=false;document.body.style.overflow='hidden';window.scrollTo(0,0)}
-function closePrint(){$('#printWrap').hidden=true;document.body.style.overflow=''}
 var TNR='font-family:"Times New Roman",Times,serif';
 var DOC_CSS='@page{size:A4 landscape;margin:1cm}body,p,div,span,td,th,h1,h2,h3,h4,table,tr,li,ol,ul,sup,sub{'+TNR+'}body{font-size:11pt;line-height:1.25;color:#000}h1{font-size:12pt;text-align:center;margin:0 0 10px;font-weight:bold}h2{font-size:11pt;margin:12px 0 4px;font-weight:bold;page-break-after:avoid}table{border-collapse:collapse;width:100%;margin:4px 0}tr{page-break-inside:avoid}td,th{page-break-inside:avoid}table.pt td,table.pt th{border:1px solid #000;padding:3px 5px;vertical-align:top;font-size:10pt}table.pt th{background:#efefef;font-weight:bold;text-align:center;font-size:10pt}table.obj td{font-size:9pt;padding:3px 4px;line-height:1.25}table.obj th{font-size:10pt;line-height:1.2;background:#efefef;font-weight:bold;text-align:center}table.agr td,table.agr th{font-size:9pt;padding:3px 5px}table.agr th{font-size:9pt;background:#efefef;font-weight:bold;text-align:center}.reg{border:1px solid #000;padding:6px 10px;width:62mm;margin-left:auto;margin-bottom:10px;font-size:10pt}.fn{font-size:9pt;margin:6px 0;font-style:italic}.sub{font-size:9pt;font-style:italic}.sig{margin-top:14px;font-size:10pt}.sig .ln{display:inline-block;border-bottom:1px solid #000;min-width:60mm}.agrs{font-size:9pt;margin:4px 0}';
 var STYLES_XML='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\
@@ -571,7 +551,7 @@ function saveDocx(){
     var p=window.claude&&window.claude.use?window.claude.use('downloads'):null;
     Promise.resolve(p).then(function(dl){
       if(!dl){
-        try{var a=document.createElement('a');a.href=URL.createObjectURL(finalBlob);a.download=fn;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href)},2000);toast('Если файл не сохранился, воспользуйтесь «Открыть вид для печати» → «Сохранить как PDF».')}catch(e){toast('Скачивание недоступно в этом окне. Откройте «Вид для печати» и сохраните как PDF.')}
+        try{var a=document.createElement('a');a.href=URL.createObjectURL(finalBlob);a.download=fn;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href)},2000);toast('Если файл не сохранился, попробуйте ещё раз или откройте страницу в другом браузере.')}catch(e){toast('Скачивание недоступно в этом окне. Откройте страницу в Chrome, Edge или Safari.')}
         return;
       }
       dl.save({filename:fn,data:finalBlob}).then(function(){toast('Файл сохранён')},function(e){if(!e||e.code!=='declined')toast('Не удалось сохранить файл ('+(e&&e.code||'ошибка')+')')});
@@ -595,14 +575,11 @@ function allRows(){return S.basket.map(function(b,i){return rowData(b,i+1)})}
 
 /* events */
 document.addEventListener('click',function(e){
-  var pb=e.target.closest('#btnPrint,#btnPrintClose');
-  if(pb){if(pb.id==='btnPrint'){try{window.print()}catch(x){}setTimeout(function(){toast('Если окно печати не открылось, нажмите Ctrl+P или Cmd+P')},400)}else{closePrint()}return}
   if(e.target&&e.target.id==='letterWrap'){e.target.hidden=true;document.body.style.overflow='';return}
   var t=e.target.closest('[data-act],[data-tab]');if(!t)return;
   var tab=t.getAttribute('data-tab');
   if(tab){setTab(tab);return}
   var act=t.getAttribute('data-act');
-  if(act==='print'){openPrint();return}
   if(act==='docx'){saveDocx();return}
   if(act==='show-letter'){e.preventDefault();var lw=document.getElementById('letterWrap');if(lw){lw.hidden=false;document.body.style.overflow='hidden'}return}
   if(act==='close-letter'){var lwc=document.getElementById('letterWrap');if(lwc){lwc.hidden=true;document.body.style.overflow=''}return}
@@ -615,10 +592,6 @@ document.addEventListener('click',function(e){
   else if(act==='cuadd'){var c=S.cust;if(!c.name.trim()||!c.inds.trim())return;var inds=c.inds.split(/\n/).map(function(x){return x.trim()}).filter(Boolean).map(function(x){return {ind:x,meth:'Выбирает ИЛ',norm:'Выдать фактический результат / согласовать с ИЛ','on':true}});S.basket.push({uid:S.uid++,kind:'food',name:c.name.trim(),qty:c.qty||'',di:'',note:c.note||'',vid:'Выбирает ИЛ',nd:c.nd||'Выдать фактический результат без указания норматива',samp:'Выбирает ИЛ',form:'Пищевая продукция',inds:inds,hint:noteExample('food'),qhint:qtyExample('food')});S.cust={name:'',nd:'',qty:'',note:'',inds:''};toast('Добавлено в заявку');renderBrowse();updateBar();return}
   else if(act==='del'){var u=+t.getAttribute('data-u');S.basket=S.basket.filter(function(b){return b.uid!==u});renderFinal();updateBar()}
   else if(act==='cp'){copyText(t.getAttribute('data-v')||'')}
-  else if(act==='cp3'){var r=allRows();copyRich(tableHTML(r,false),tableText(r,false),'Строки раздела III скопированы')}
-  else if(act==='cp3h'){var r2=allRows();copyRich(tableHTML(r2,true),tableText(r2,true),'Таблица с заголовком скопирована')}
-  else if(act==='cp1'){var p=sectionI();copyRich(kvHTML(p),kvText(p),'Раздел I скопирован')}
-  else if(act==='cp2'){var p2=sectionII();copyRich(kvHTML(p2),kvText(p2),'Раздел II скопирован')}
   else if(act==='cpAgree'){copyRich(agreeHTML(),agreeText(),'Таблица согласования скопирована')}
   else if(act==='cpAktG'){copyText(aktGeneral().map(function(f){return f[0]+'\t'+f[1]}).join('\n'),'Общая часть акта скопирована')}
   else if(act==='cpAktI'){var u2=+t.getAttribute('data-u');var idx=S.basket.map(function(b){return b.uid}).indexOf(u2);copyText(aktItem(S.basket[idx],idx+1).map(function(f){return f[0]+'\t'+String(f[1]).replace(/\n/g,'; ')}).join('\n'),'Образец скопирован')}
@@ -653,14 +626,8 @@ document.addEventListener('change',function(e){
 
 window.addEventListener('hashchange',function(){var h=(location.hash||'').replace('#','');if(['zakazchik','vybor','zayavka','pamyatka'].indexOf(h)>=0&&h!==S.tab)setTab(h,true)});
 /* init */
-function seed(){
-  // seed 2 example items so Готовая заявка не пустая при первом открытии
-  var f=ALL.filter(function(a){return a.kind==='food'&&/Салаты/i.test(a.cat)})[0];
-  var e=ALL.filter(function(a){return a.cat==='Смывы'&&/общепите/.test(a.name)})[0];
-  if(f){addItem(f,f.items.map(function(){return true}));S.basket[0].qty='2 образца по 200 г'}
-  if(e){addItem(e,e.items.map(function(i){return i.on}));var last=S.basket[S.basket.length-1];last.qty='10 смывов';last.note='цех, посуда, инвентарь, руки персонала'}
-}
-fillInputs();seed();updateBar();
+/* Заявка стартует пустой: строки появляются только после выбора на шаге 2. */
+fillInputs();updateBar();
 var h=(location.hash||'').replace('#','');
 if(['zakazchik','vybor','zayavka','pamyatka'].indexOf(h)>=0)setTab(h,true);
 })();

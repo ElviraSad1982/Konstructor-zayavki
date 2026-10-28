@@ -82,6 +82,10 @@ textarea{min-height:60px;resize:vertical}
 .chip{display:inline-block;font-size:12.5px;border:1px solid var(--line);border-radius:999px;padding:2px 10px;color:var(--muted);background:var(--bg);max-width:100%;overflow-wrap:anywhere}
 .chip.ok{color:var(--ok);background:var(--ok-soft);border-color:transparent}
 .chip.warn{color:var(--warn);background:var(--warn-soft);border-color:transparent}
+/* Чипы-кнопки выбора категории: выбранная должна читаться сразу. */
+button.chip{cursor:pointer;color:var(--ink);font-size:13px;padding:5px 13px}
+button.chip:hover{border-color:var(--accent)}
+button.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
 .tw{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
 table{border-collapse:collapse;width:100%}
 th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
@@ -124,48 +128,4 @@ ul.clean li{margin:3px 0}
 .cb{display:flex;gap:8px;align-items:flex-start}
 .cb input{margin-top:4px}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
-/* печатный предпросмотр */
-#printWrap{position:fixed;inset:0;background:#5a6775;z-index:50;overflow:auto;display:flex;flex-direction:column}
-#printWrap .pbar{position:sticky;top:0;background:var(--ink);color:#fff;padding:10px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;z-index:2}
-#printWrap .pbar .btn{background:#fff;color:var(--ink);border:0}
-#printWrap .pbar .btn.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4)}
-#printWrap .pbar .ph{font-size:13px;opacity:.85}
-#printArea{background:#fff;color:#000;width:297mm;max-width:100%;margin:16px auto;padding:12mm 14mm;box-shadow:0 2px 18px rgba(0,0,0,.3);font-family:"Times New Roman",Times,serif;font-size:10pt;line-height:1.3}
-@media (max-width:720px){#printArea{padding:8mm;font-size:9pt}}
-#printArea h1{font-size:12pt;text-align:center;margin:0 0 10px;font-weight:bold}
-#printArea h2{font-size:10.5pt;margin:12px 0 4px;font-weight:bold}
-#printArea .reg{border:1px solid #000;padding:6px 10px;width:62mm;margin-left:auto;margin-bottom:10px;font-size:10pt}
-#printArea table{width:100%;border-collapse:collapse;margin:4px 0}
-#printArea tr{page-break-inside:avoid}
-#printArea td,#printArea th{page-break-inside:avoid}
-#printArea h2{page-break-after:avoid}
-#printArea table.pt td,#printArea table.pt th{border:1px solid #000;padding:3px 5px;vertical-align:top;font-size:9.5pt;color:#000;word-wrap:break-word;overflow-wrap:anywhere}
-#printArea table.pt th{background:#efefef;font-weight:bold;text-align:center;font-size:9pt}
-#printArea table.obj{table-layout:fixed}
-#printArea table.obj{word-break:break-word}
-#printArea table.obj td,#printArea table.obj th{font-size:8pt;padding:3px 4px;line-height:1.2;word-break:break-word;overflow-wrap:anywhere}
-#printArea table.obj th{font-size:7.5pt;line-height:1.1}
-#printArea table.obj col.c1{width:3%}
-#printArea table.obj col.c2{width:16%}
-#printArea table.obj col.c3{width:7%}
-#printArea table.obj col.c4{width:9%}
-#printArea table.obj col.c5{width:19%}
-#printArea table.obj col.c6{width:16%}
-#printArea table.obj col.c7{width:9%}
-#printArea table.obj col.c8{width:13%}
-#printArea table.obj col.c9{width:8%}
-#printArea .fn{font-size:9pt;margin:6px 0}
-#printArea .ck{font-family:Arial,sans-serif}
-#printArea .sig{margin-top:14px;font-size:10pt}
-#printArea .sig .ln{display:inline-block;border-bottom:1px solid #000;min-width:60mm;margin:0 4px}
-#printArea .note{background:transparent;border:0;color:#000;padding:0;margin:6px 0;font-size:9.5pt;font-style:italic}
-@media print{
-  html,body{background:#fff!important}
-  :root{padding:0!important}
-  body>*{display:none!important}
-  #printWrap{position:static!important;background:#fff!important;display:block!important;overflow:visible!important}
-  #printWrap .pbar{display:none!important}
-  #printArea{box-shadow:none!important;margin:0!important;max-width:none!important;padding:0!important}
-  @page{size:A4 landscape;margin:10mm 10mm}
-}
 </style>

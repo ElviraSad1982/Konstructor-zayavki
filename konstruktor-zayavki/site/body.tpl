@@ -29,28 +29,6 @@
     <div class="field"><span class="legend">Оптимальные методы (методики) испытаний (измерений) выбирает</span><div class="choices" id="g_methods"></div><span class="help"><b>ИЛ ООО «ВИКИНГ»</b> — в этом случае методики указываются в заявке сотрудником лаборатории и согласовываются с заказчиком.<br><b>Заказчик</b> — в этом случае методики указываются в заявке заказчиком и согласовываются сотрудником лаборатории.</span></div>
     <div class="field full"><label for="c_place">Адрес места отбора проб или проведения измерений</label><input type="text" id="c_place" data-c="place"><span class="help">Заполняется, если пробы отбирает специалист ИЛ. Укажите адрес, этаж/помещение, кто встретит и его телефон. <button class="btn sm ghost" data-act="place-actual">Как фактический адрес</button></span></div>
   </div></div>
-  <div class="card"><h3 style="margin-top:0">Раздел IV. Согласование с заказчиком</h3>
-    <p class="help" style="color:var(--muted);font-size:13px;margin:0 0 10px">По умолчанию все галочки проставлены ☒ — так заявка сразу готова к печати. Снимите те пункты, с которыми не согласны.</p>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <label class="cb"><input type="checkbox" data-ag="oa" checked><span>Ознакомлен с областью аккредитации ИЛ ООО «Викинг» (<a href="https://pub.fsa.gov.ru/ral/view/16581/current-aa" target="_blank" rel="noopener">pub.fsa.gov.ru/ral/view/16581</a>)</span></label>
-      <label class="cb"><input type="checkbox" data-ag="meth" checked><span>Ознакомлен с выбранными методами испытаний (измерений) и отбора проб</span></label>
-      <label class="cb"><input type="checkbox" data-ag="color" checked><span>Согласен на оформление результатов цветности воды без указания температуры пробы (п. 4.5 ГОСТ 31868-2012). <span class="help" style="color:var(--muted);font-size:12.5px">Снимите, если проводите испытания воды с указанием T.</span></span></label>
-      <label class="cb"><input type="checkbox" data-ag="samples" checked><span>Ознакомлен о необходимом количестве образцов для проведения испытаний</span></label>
-      <label class="cb"><input type="checkbox" data-ag="pay" checked><span>Гарантирую оплату по проведению лабораторных испытаний (измерений)</span></label>
-      <label class="cb"><input type="checkbox" data-ag="terms" checked><span>Уведомлён о сроках проведения лабораторных испытаний (измерений)</span></label>
-      <label class="cb"><input type="checkbox" data-ag="return" checked><span>Ознакомлен с порядком возврата (списания) образцов продукции: образцы после микробиологических испытаний, скоропортящейся продукции и образцы, подвергшиеся разрушающим методам воздействия, возврату не подлежат</span></label>
-      <div class="field" style="margin-left:28px">
-        <span class="legend">Образцы списать</span>
-        <div class="choices" id="g_discardMode"></div>
-      </div>
-      <label class="cb"><input type="checkbox" data-ag="pdn" checked><span>Даю согласие на обработку персональных данных (ФЗ от 27.07.2006 № 152-ФЗ)</span></label>
-    </div>
-    <div class="field" style="margin-top:14px">
-      <span class="legend">С вышеперечисленными условиями проведения испытаний (измерений)</span>
-      <div class="choices" id="g_consent"></div>
-    </div>
-  </div>
-
   <div class="row"><button class="btn pri" data-act="goto" data-to="vybor">Далее: что проверяем</button></div>
 </section>
 
@@ -63,8 +41,34 @@
 
 <section id="p-zayavka" class="sect" role="tabpanel" hidden>
   <div><h2>Шаг 3. Готовая заявка</h2>
-  <p class="lead">Бланк заявки (Word) не меняется: копируйте данные и вставляйте в утверждённую форму. Акт отбора ведётся в Excel.</p></div>
+  <p class="lead">Проверьте собранную заявку, согласуйте условия в Разделе IV и скачайте готовый файл Word. Акт отбора ведётся в Excel.</p></div>
   <div id="final"></div>
+  <div id="finaltail" hidden>
+    <div class="card"><h3 style="margin-top:0">Раздел IV. Согласование с заказчиком</h3>
+      <p class="help" style="color:var(--muted);font-size:13px;margin:0 0 10px">По умолчанию все галочки проставлены ☒ — так заявка сразу готова к печати. Снимите те пункты, с которыми не согласны.</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label class="cb"><input type="checkbox" data-ag="oa" checked><span>Ознакомлен с областью аккредитации ИЛ ООО «Викинг» (<a href="https://pub.fsa.gov.ru/ral/view/16581/current-aa" target="_blank" rel="noopener">pub.fsa.gov.ru/ral/view/16581</a>)</span></label>
+        <label class="cb"><input type="checkbox" data-ag="meth" checked><span>Ознакомлен с выбранными методами испытаний (измерений) и отбора проб</span></label>
+        <label class="cb"><input type="checkbox" data-ag="color" checked><span>Согласен на оформление результатов цветности воды без указания температуры пробы (п. 4.5 ГОСТ 31868-2012). <span class="help" style="color:var(--muted);font-size:12.5px">Снимите, если проводите испытания воды с указанием T.</span></span></label>
+        <label class="cb"><input type="checkbox" data-ag="samples" checked><span>Ознакомлен о необходимом количестве образцов для проведения испытаний</span></label>
+        <label class="cb"><input type="checkbox" data-ag="pay" checked><span>Гарантирую оплату по проведению лабораторных испытаний (измерений)</span></label>
+        <label class="cb"><input type="checkbox" data-ag="terms" checked><span>Уведомлён о сроках проведения лабораторных испытаний (измерений)</span></label>
+        <label class="cb"><input type="checkbox" data-ag="return" checked><span>Ознакомлен с порядком возврата (списания) образцов продукции: образцы после микробиологических испытаний, скоропортящейся продукции и образцы, подвергшиеся разрушающим методам воздействия, возврату не подлежат</span></label>
+        <div class="field" style="margin-left:28px">
+          <span class="legend">Образцы списать</span>
+          <div class="choices" id="g_discardMode"></div>
+        </div>
+        <label class="cb"><input type="checkbox" data-ag="pdn" checked><span>Даю согласие на обработку персональных данных (ФЗ от 27.07.2006 № 152-ФЗ)</span></label>
+      </div>
+      <div class="field" style="margin-top:14px">
+        <span class="legend">С вышеперечисленными условиями проведения испытаний (измерений)</span>
+        <div class="choices" id="g_consent"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:12px"><h3 style="margin-top:0">Итог</h3>
+      Отправьте файл Word на почту специалисту по работе с клиентами: <a href="mailto:info@laboratoriya-viking.ru"><b>info@laboratoriya-viking.ru</b></a>.
+    </div>
+  </div>
 </section>
 
 <section id="p-pamyatka" class="sect doc" role="tabpanel" hidden>__MEMO__</section>
@@ -75,10 +79,6 @@
   <span class="row"><button class="btn pri" data-act="goto" data-to="zayavka">Показать заявку</button></span>
 </div></div>
 <div class="toast" id="toast" role="status" hidden></div>
-<div id="printWrap" hidden><div class="pbar">
-  <span><button class="btn" id="btnPrint">Печать</button> <button class="btn ghost" id="btnPrintClose">Закрыть</button></span>
-  <span class="ph">A4, альбомная ориентация. Нажмите «Печать» или Ctrl+P / ⌘+P в браузере.</span>
-</div><div id="printArea" aria-label="Печатная заявка"></div></div>
 <div id="letterWrap" class="lwrap" hidden><div class="lcard">
   <div class="lhead"><b>Информационное письмо ИЛ ООО «ВИКИНГ»</b><button class="btn ghost sm" data-act="close-letter">Закрыть</button></div>
   <div class="lbody">
