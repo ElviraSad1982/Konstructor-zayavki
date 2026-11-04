@@ -599,12 +599,6 @@ function applyMethPolicy(ind,meth){
 }
 
 /* builders */
-function rowData(b,n){
-  var c=S.c,on=b.inds.filter(function(x){return x.on});
-  var obj=b.name;
-  var samp=b.samp;
-  return {n:String(n),obj:obj,qty:b.qty,vid:b.vid,ind:on.map(function(x){return x.ind}).join('\n'),meth:on.map(function(x){return applyMethPolicy(x.ind,x.meth)}).join('\n'),samp:samp,nd:b.nd,note:b.note};
-}
 /* Разные показатели одного набора могут браться в разном количестве
    (10 смывов на БГКП, 5 на стафилококк). В бланке «Кол-во образцов» —
    одна ячейка на строку, поэтому такие показатели уходят отдельными
@@ -641,22 +635,6 @@ function tableHTML(rows,withHead){
   return h+'</table>';
 }
 
-function aktGeneral(){
-  var c=S.c;
-  return [
-   ['1. Заказчик (наименование организации)',c.org,1],['1.1. ИНН заказчика',c.inn,1],['1.2. Юридический адрес заказчика',c.legal,1],['1.3. Фактический адрес заказчика',c.actual,1],
-   ['2. Основание для испытаний (заявка): №','присваивает ИЛ',1],['4. Место фактического отбора образца(ов)',c.place||c.actual,1],
-   ['7. Отбор осуществил',c.sampler==='lab'?'Специалист по отбору проб ИЛ ООО «ВИКИНГ»':'Заказчик (представитель заказчика)',1],['8. Цель проведения испытаний',c.purpose,1],
-   ['9. Информация для оценки неопределённости',c.unc==='Да'?'Нужна оценка неопределённости измерений':'Не требуется',1]
-  ];
-}
-function aktItem(b,n){
-  var r=rowData(b,n);
-  var out=[['Наименование образца',b.name,1],['Количество и масса (объём) образца, информация о партии',b.qty,1]];
-  out.push(['Вид испытаний',b.vid,1],['НД, устанавливающий допустимый уровень',b.nd,1],['Перечень требуемых показателей',r.ind,1],['НД на метод отбора',b.samp,1]);
-  if(b.note)out.push(['Примечание',b.note,1]);
-  return out;
-}
 
 function renderFinal(){
   var box=$('#final');
@@ -710,8 +688,6 @@ function renderFinal(){
 
 
 /* print view */
-function cb(on){return on?'<span class="ck">☒</span>':'<span class="ck">☐</span>'}
-function or(v,ph){return v?esc(v):'<span style="color:#888">'+esc(ph||'—')+'</span>'}
 /* Заполнение утверждённого бланка заявки.
 
    Файл собирается не из HTML, а из самого бланка ООО «ВИКИНГ»: JSZip
@@ -933,10 +909,6 @@ function saveDocx(){
 
 /* clipboard */
 function toast(m){var t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){t.hidden=true},2200)}
-function copyText(text,msg){
-  var fb=function(){var ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;left:-9999px;top:0';document.body.appendChild(ta);ta.select();var ok=false;try{ok=document.execCommand('copy')}catch(e){}ta.remove();toast(ok?(msg||'Скопировано'):'Не удалось скопировать, выделите текст вручную')};
-  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){toast(msg||'Скопировано')},fb)}else fb();
-}
 
 /* events */
 document.addEventListener('click',function(e){
@@ -957,9 +929,6 @@ document.addEventListener('click',function(e){
   else if(act==='cuadd'){var c=S.cust;if(!c.name.trim()||!c.inds.trim())return;var inds=c.inds.split(/\n/).map(function(x){return x.trim()}).filter(Boolean).map(function(x){return {ind:x,meth:'Выбирает ИЛ',norm:'Выдать фактический результат / согласовать с ИЛ','on':true}});S.basket.push({uid:S.uid++,kind:'food',name:c.name.trim(),qty:c.qty||'',di:'',note:c.note||'',vid:'Выбирает ИЛ',nd:c.nd||'Выдать фактический результат без указания норматива',samp:'Выбирает ИЛ',form:'Пищевая продукция',inds:inds,hint:noteExample('food'),qhint:qtyExample('food')});S.cust={name:'',nd:'',qty:'',note:'',inds:''};toast('Добавлено в заявку');renderBrowse();updateBar();return}
   else if(act==='showall'){var bs=S.basket.filter(function(x){return x.uid===+t.getAttribute('data-u')})[0];if(bs){bs.showAll=!bs.showAll;renderFinal()}}
   else if(act==='del'){var u=+t.getAttribute('data-u');S.basket=S.basket.filter(function(b){return b.uid!==u});renderFinal();updateBar()}
-  else if(act==='cp'){copyText(t.getAttribute('data-v')||'')}
-  else if(act==='cpAktG'){copyText(aktGeneral().map(function(f){return f[0]+'\t'+f[1]}).join('\n'),'Общая часть акта скопирована')}
-  else if(act==='cpAktI'){var u2=+t.getAttribute('data-u');var idx=S.basket.map(function(b){return b.uid}).indexOf(u2);copyText(aktItem(S.basket[idx],idx+1).map(function(f){return f[0]+'\t'+String(f[1]).replace(/\n/g,'; ')}).join('\n'),'Образец скопирован')}
   else if(act==='same-addr'){S.c.actual=S.c.legal;fillInputs()}
   else if(act==='place-actual'){S.c.place=S.c.actual;fillInputs()}
   else if(act==='clear-example'){S.c={org:'',inn:'',legal:'',actual:'',contact:'',cno:'',cdate:'',place:'',placeContact:'',purpose:'Производственный контроль',sampler:'lab',methods:'lab',unc:'Нет',concl:'Нет'};S.basket=[];S.example=false;fillInputs();updateBar()}
