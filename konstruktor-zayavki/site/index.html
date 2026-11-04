@@ -91,6 +91,8 @@ th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;verti
 th{font-size:12.5px;color:var(--muted);font-weight:500;background:var(--bg);white-space:nowrap}
 tr:last-child td{border-bottom:0}
 td.mono,.mono{font-family:var(--f-mono);font-size:12.5px}
+/* количество у отдельного показателя — узкое поле прямо в таблице */
+input.iq{width:104px;padding:4px 7px;font-size:13px}
 td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .note{background:var(--warn-soft);color:var(--ink);border-left:3px solid var(--warn);padding:8px 12px;border-radius:0 4px 4px 0;font-size:13.5px;margin:10px 0}
 .info{background:var(--accent-soft);border-left:3px solid var(--accent);padding:8px 12px;border-radius:0 4px 4px 0;font-size:13.5px;margin:10px 0}
@@ -550,7 +552,7 @@ function addItem(a,on,extras){
   var it={uid:S.uid++,kind:k,name:a.name,qty:extras.qty||'',di:'',note:extras.note||'',vid:a.vid,nd:a.nd,samp:a.samp,form:a.form,inds:inds,hint:noteExample(k),qhint:qtyExample(k)};
   S.basket.push(it); return it;
 }
-function totals(){var rows=S.basket.length,ind=0;S.basket.forEach(function(b){b.inds.forEach(function(x){if(x.on)ind++})});return {rows:rows,ind:ind}}
+function totals(){var rows=allRows().length,ind=0;S.basket.forEach(function(b){b.inds.forEach(function(x){if(x.on)ind++})});return {rows:rows,ind:ind}}
 function plural(n,a,b,c){var m=n%10,k=n%100;return (m===1&&k!==11)?a:((m>=2&&m<=4&&(k<10||k>=20))?b:c)}
 function updateBar(){
   var t=totals(),cnt=$('#cnt');
@@ -589,6 +591,33 @@ function rowData(b,n){
   var samp=b.samp;
   return {n:String(n),obj:obj,qty:b.qty,vid:b.vid,ind:on.map(function(x){return x.ind}).join('\n'),meth:on.map(function(x){return applyMethPolicy(x.ind,x.meth)}).join('\n'),samp:samp,nd:b.nd,note:b.note};
 }
+/* Разные показатели одного набора могут браться в разном количестве
+   (10 смывов на БГКП, 5 на стафилококк). В бланке «Кол-во образцов» —
+   одна ячейка на строку, поэтому такие показатели уходят отдельными
+   строками: группируем их по количеству, сохраняя порядок. */
+function rowsFor(b,startN){
+  var on=b.inds.filter(function(x){return x.on});
+  if(!on.length)return [];
+  var groups=[],map={};
+  on.forEach(function(x){
+    var q=((x.qty||'').trim())||b.qty||'';
+    if(!map[q]){map[q]={qty:q,inds:[]};groups.push(map[q])}
+    map[q].inds.push(x);
+  });
+  return groups.map(function(g,i){
+    return {n:String(startN+i),obj:b.name,qty:g.qty,vid:b.vid,
+      ind:g.inds.map(function(x){return x.ind}).join('\n'),
+      meth:g.inds.map(function(x){return applyMethPolicy(x.ind,x.meth)}).join('\n'),
+      samp:b.samp,nd:b.nd,note:b.note};
+  });
+}
+function allRows(){
+  var out=[];
+  S.basket.forEach(function(b){
+    rowsFor(b,out.length+1).forEach(function(r){out.push(r)});
+  });
+  return out;
+}
 var HEAD=['№ п/п','Объект испытаний (измерений)','Кол-во образцов / измерений','Вид испытаний','Перечень определяемых показателей','Метод (методика) испытаний (измерений)','Метод (методика) отбора образца(ов)','НД, устанавливающий допустимый уровень','Примечания'];
 function tableHTML(rows,withHead){
   var st='border:1px solid #000;padding:4px;vertical-align:top;font-size:10pt';
@@ -618,7 +647,7 @@ function aktItem(b,n){
 function renderFinal(){
   var box=$('#final');
   if(!S.basket.length){box.innerHTML='<div class="card empty">В заявке пока нет строк. <button class="btn pri" data-act="goto" data-to="vybor">Выбрать, что проверять</button></div>';$('#finaltail').hidden=true;return}
-  var t=totals(),rows=S.basket.map(function(b,i){return rowData(b,i+1)});
+  var t=totals(),rows=allRows();
   var h='<div class="info">Строк: <b>'+t.rows+'</b>, показателей: <b>'+t.ind+'</b>. Счёт выставляется по каждому показателю, проверьте список перед отправкой.</div>';
   /* items editor */
   h+='<h3>Строки заявки</h3><div class="items">';
@@ -629,9 +658,10 @@ function renderFinal(){
     h+='<div class="field"><label for="q'+b.uid+'">'+(b.kind==='phys'?'Количество измерений':'Количество образцов')+'</label><input type="text" id="q'+b.uid+'" data-b="qty" data-u="'+b.uid+'" value="'+esc(b.qty)+'" placeholder="'+esc(qh)+'"></div>';
     h+='<div class="field full"><label for="m'+b.uid+'">Примечания</label><input type="text" id="m'+b.uid+'" data-b="note" data-u="'+b.uid+'" value="'+esc(b.note)+'" placeholder="'+esc(nh)+'"></div>';
     h+='<div class="field full"><label for="nd'+b.uid+'">НД, устанавливающий допустимый уровень</label><input type="text" id="nd'+b.uid+'" data-b="nd" data-u="'+b.uid+'" value="'+esc(b.nd)+'"><span class="help">Если проверка на соответствие собственным ТУ или СТО — замените этот текст на ваш НД (например: ТУ 10.11.30-001-12345678-2024).</span></div></div>';
-    h+='<div class="tw"><table><tr><th></th><th>Показатель</th><th>Норматив</th><th>Метод</th></tr>';
-    b.inds.forEach(function(x,j){h+='<tr><td><input type="checkbox" data-act="bchk" data-u="'+b.uid+'" data-j="'+j+'" id="k'+b.uid+'_'+j+'" aria-label="включить"'+(x.on?' checked':'')+'></td><td><label for="k'+b.uid+'_'+j+'">'+esc(x.ind)+'</label></td><td>'+esc(x.norm||'')+'</td><td class="mono">'+esc(applyMethPolicy(x.ind,x.meth))+'</td></tr>'});
-    h+='</table></div><div class="chips"><span class="chip">отбор: '+esc(b.samp)+'</span></div>';
+    h+='<div class="tw"><table><tr><th></th><th>Показатель</th><th>Кол-во</th><th>Норматив</th><th>Метод</th></tr>';
+    b.inds.forEach(function(x,j){h+='<tr><td><input type="checkbox" data-act="bchk" data-u="'+b.uid+'" data-j="'+j+'" id="k'+b.uid+'_'+j+'" aria-label="включить"'+(x.on?' checked':'')+'></td><td><label for="k'+b.uid+'_'+j+'">'+esc(x.ind)+'</label></td><td><input type="text" class="iq" data-iq="1" data-u="'+b.uid+'" data-j="'+j+'" value="'+esc(x.qty||'')+'" placeholder="'+esc(b.qty||'общее')+'" aria-label="количество для показателя"></td><td>'+esc(x.norm||'')+'</td><td class="mono">'+esc(applyMethPolicy(x.ind,x.meth))+'</td></tr>'});
+    h+='</table></div><div class="help" style="color:var(--muted);font-size:12.5px;margin:4px 0 0">Колонку «Кол-во» заполняйте, только если количество отличается от общего: такие показатели уйдут в заявку отдельной строкой.</div>';
+    h+='<div class="chips"><span class="chip">отбор: '+esc(b.samp)+'</span></div>';
     h+='</div>';
   });
   h+='</div><div class="row"><button class="btn" data-act="goto" data-to="vybor">Добавить ещё</button></div>';
@@ -827,7 +857,7 @@ function docxData(){
   return {org:c.org,inn:c.inn,legal:c.legal,actual:c.actual,contact:c.contact,
     cno:c.cno,cdate:c.cdate,purpose:c.purpose,sampler:c.sampler,methods:c.methods,
     unc:c.unc,place:c.place,placeContact:c.placeContact,agree:c.agree,
-    consent:c.consent,rows:S.basket.map(function(b,i){return rowData(b,i+1)})};
+    consent:c.consent,rows:allRows()};
 }
 
 function saveDocx(){
@@ -902,6 +932,7 @@ document.addEventListener('input',function(e){
   if(t.hasAttribute('data-c')){S.c[t.getAttribute('data-c')]=t.value;if(S.example){S.example=false;$('#exbanner').hidden=true}
     if(t.getAttribute('data-c')==='inn'){var v=(t.value||'').replace(/\D/g,'');var ok=v.length===10||v.length===12;var h=$('#innHelp');if(h){if(v.length>0&&!ok){h.textContent='ИНН должен содержать 10 цифр (ООО/АО) или 12 цифр (ИП). Сейчас — '+v.length+'.';h.style.color='var(--warn)'}else{h.textContent='10 цифр у организации (ООО/АО) или 12 цифр у ИП.';h.style.color=''}}}
     return}
+  if(t.hasAttribute('data-iq')){var bi=S.basket.filter(function(x){return x.uid===+t.getAttribute('data-u')})[0];if(bi){bi.inds[+t.getAttribute('data-j')].qty=t.value;updateBar()}return}
   if(t.hasAttribute('data-b')){var b=S.basket.filter(function(x){return x.uid===+t.getAttribute('data-u')})[0];if(b){b[t.getAttribute('data-b')]=t.value}return}
   if(t.hasAttribute('data-dq')&&S.checks){S.checks[t.getAttribute('data-dq')]=t.value;return}
   if(t.hasAttribute('data-cu')){S.cust[t.getAttribute('data-cu')]=t.value;var btn=document.querySelector('[data-act=cuadd]');if(btn){var ok=S.cust.name.trim()&&S.cust.inds.trim();if(ok)btn.removeAttribute('disabled');else btn.setAttribute('disabled','')}return}

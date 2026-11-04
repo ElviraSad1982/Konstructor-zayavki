@@ -91,6 +91,8 @@ th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;verti
 th{font-size:12.5px;color:var(--muted);font-weight:500;background:var(--bg);white-space:nowrap}
 tr:last-child td{border-bottom:0}
 td.mono,.mono{font-family:var(--f-mono);font-size:12.5px}
+/* количество у отдельного показателя — узкое поле прямо в таблице */
+input.iq{width:104px;padding:4px 7px;font-size:13px}
 td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .note{background:var(--warn-soft);color:var(--ink);border-left:3px solid var(--warn);padding:8px 12px;border-radius:0 4px 4px 0;font-size:13.5px;margin:10px 0}
 .info{background:var(--accent-soft);border-left:3px solid var(--accent);padding:8px 12px;border-radius:0 4px 4px 0;font-size:13.5px;margin:10px 0}
