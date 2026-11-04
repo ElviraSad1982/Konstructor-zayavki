@@ -660,10 +660,22 @@ function renderFinal(){
     h+='<div class="field"><label for="q'+b.uid+'">'+(b.kind==='phys'?'Количество измерений':'Количество образцов')+'</label><input type="text" id="q'+b.uid+'" data-b="qty" data-u="'+b.uid+'" value="'+esc(b.qty)+'" placeholder="'+esc(qh)+'"></div>';
     h+='<div class="field full"><label for="m'+b.uid+'">Примечания</label><input type="text" id="m'+b.uid+'" data-b="note" data-u="'+b.uid+'" value="'+esc(b.note)+'" placeholder="'+esc(nh)+'"></div>';
     h+='<div class="field full"><label for="nd'+b.uid+'">НД, устанавливающий допустимый уровень</label><input type="text" id="nd'+b.uid+'" data-b="nd" data-u="'+b.uid+'" value="'+esc(b.nd)+'"><span class="help">Если проверка на соответствие собственным ТУ или СТО — замените этот текст на ваш НД (например: ТУ 10.11.30-001-12345678-2024).</span></div></div>';
+    /* Длинные наборы (у воды бывает 27 показателей) схлопываем:
+       видно выбранное, остальное — под кнопкой. */
+    var anyOn=b.inds.some(function(x){return x.on});
+    var showOff=b.showAll||!anyOn, hidden=0;
     h+='<div class="tw"><table><tr><th></th><th>Показатель</th><th>Кол-во</th><th>Норматив</th><th>Метод</th></tr>';
-    b.inds.forEach(function(x,j){h+='<tr><td><input type="checkbox" data-act="bchk" data-u="'+b.uid+'" data-j="'+j+'" id="k'+b.uid+'_'+j+'" aria-label="включить"'+(x.on?' checked':'')+'></td><td><label for="k'+b.uid+'_'+j+'">'+esc(x.ind)+'</label></td><td><input type="text" class="iq" data-iq="1" data-u="'+b.uid+'" data-j="'+j+'" value="'+esc(x.qty||'')+'" placeholder="'+esc(b.qty||'общее')+'" aria-label="количество для показателя"></td><td>'+esc(x.norm||'')+'</td><td class="mono">'+esc(applyMethPolicy(x.ind,x.meth))+'</td></tr>'});
+    b.inds.forEach(function(x,j){
+      if(!x.on&&!showOff){hidden++;return}
+      h+='<tr><td><input type="checkbox" data-act="bchk" data-u="'+b.uid+'" data-j="'+j+'" id="k'+b.uid+'_'+j+'" aria-label="включить"'+(x.on?' checked':'')+'></td><td><label for="k'+b.uid+'_'+j+'">'+esc(x.ind)+'</label></td><td><input type="text" class="iq" data-iq="1" data-u="'+b.uid+'" data-j="'+j+'" value="'+esc(x.qty||'')+'" placeholder="'+esc(b.qty||'общее')+'" aria-label="количество для показателя"></td><td>'+esc(x.norm||'')+'</td><td class="mono">'+esc(applyMethPolicy(x.ind,x.meth))+'</td></tr>'});
     h+='</table></div>';
-    if(!b.inds.some(function(x){return x.on})){
+    var offTotal=b.inds.filter(function(x){return !x.on}).length;
+    if(hidden){
+      h+='<div class="row" style="margin:6px 0 0"><button class="btn sm ghost" data-act="showall" data-u="'+b.uid+'">Показать остальные показатели ('+hidden+')</button></div>';
+    }else if(b.showAll&&anyOn&&offTotal){
+      h+='<div class="row" style="margin:6px 0 0"><button class="btn sm ghost" data-act="showall" data-u="'+b.uid+'">Скрыть невыбранные ('+offTotal+')</button></div>';
+    }
+    if(!anyOn){
       h+='<div class="note" style="margin:8px 0 0">Не отмечен ни один показатель — эта строка в заявку не попадёт.</div>';
     }
     h+='<div class="help" style="color:var(--muted);font-size:12.5px;margin:4px 0 0">Отметьте нужные показатели. Колонку «Кол-во» заполняйте, только если количество отличается от общего: такие показатели уйдут в заявку отдельной строкой.</div>';
@@ -923,6 +935,7 @@ document.addEventListener('click',function(e){
   else if(act==='add'){var a=ALL[+t.getAttribute('data-id')];addItem(a,S.checks.on,{qty:S.checks.qty,note:S.checks.note});S.checks=null;toast('Добавлено в заявку');renderDetail();updateBar()}
   else if(act==='tradd'){trAdd()}
   else if(act==='cuadd'){var c=S.cust;if(!c.name.trim()||!c.inds.trim())return;var inds=c.inds.split(/\n/).map(function(x){return x.trim()}).filter(Boolean).map(function(x){return {ind:x,meth:'Выбирает ИЛ',norm:'Выдать фактический результат / согласовать с ИЛ','on':true}});S.basket.push({uid:S.uid++,kind:'food',name:c.name.trim(),qty:c.qty||'',di:'',note:c.note||'',vid:'Выбирает ИЛ',nd:c.nd||'Выдать фактический результат без указания норматива',samp:'Выбирает ИЛ',form:'Пищевая продукция',inds:inds,hint:noteExample('food'),qhint:qtyExample('food')});S.cust={name:'',nd:'',qty:'',note:'',inds:''};toast('Добавлено в заявку');renderBrowse();updateBar();return}
+  else if(act==='showall'){var bs=S.basket.filter(function(x){return x.uid===+t.getAttribute('data-u')})[0];if(bs){bs.showAll=!bs.showAll;renderFinal()}}
   else if(act==='del'){var u=+t.getAttribute('data-u');S.basket=S.basket.filter(function(b){return b.uid!==u});renderFinal();updateBar()}
   else if(act==='cp'){copyText(t.getAttribute('data-v')||'')}
   else if(act==='cpAgree'){copyRich(agreeHTML(),agreeText(),'Таблица согласования скопирована')}
