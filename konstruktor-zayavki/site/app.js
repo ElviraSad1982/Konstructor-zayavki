@@ -82,7 +82,7 @@ function modeFilter(mode,subId){
 }
 
 var S={tab:'zakazchik',mode:'food',sub:'',sq:'',sel:null,checks:null,basket:[],uid:1,example:true,trSel:{},trGrp:'',trInd:'',trQ:'',cust:{name:'',nd:'',qty:'',note:'',inds:''},
- c:{org:'ООО «Пример» (вымышленная организация)',inn:'0000000000',legal:'101000, г. Москва, ул. Примерная, д. 1',actual:'101000, г. Москва, ул. Примерная, д. 1',contact:'Иванова Мария Петровна, технолог, +7 900 000-00-00, example@example.ru',cno:'00/00-01/2026',cdate:'01.01.2026',place:'101000, г. Москва, ул. Примерная, д. 1 (проходная, Иванова М. П., +7 900 000-00-00)',purpose:'Производственный контроль',sampler:'lab',methods:'lab',unc:'Нет',concl:'Нет',agree:{oa:true,meth:true,color:true,samples:true,pay:true,terms:true,return:true,pdn:true},discardMode:'without',consent:'yes'}};
+ c:{org:'ООО «Пример» (вымышленная организация)',inn:'0000000000',legal:'101000, г. Москва, ул. Примерная, д. 1',actual:'101000, г. Москва, ул. Примерная, д. 1',contact:'Иванова Мария Петровна, технолог, +7 900 000-00-00, example@example.ru',cno:'00/00-01/2026',cdate:'01.01.2026',place:'101000, г. Москва, ул. Примерная, д. 1, 2 этаж, производственный цех',placeContact:'Иванова Мария Петровна, технолог, +7 900 000-00-00',purpose:'Производственный контроль',sampler:'lab',methods:'lab',unc:'Нет',concl:'Нет',agree:{oa:true,meth:true,color:true,samples:true,pay:true,terms:true,return:true,pdn:true},discardMode:'without',consent:'yes'}};
 
 var CH={
  g_purpose:{k:'purpose',o:['Производственный контроль','Входной контроль','Декларирование','Прочее']},
@@ -407,7 +407,10 @@ function printHTML(){
   var pur=['Производственный контроль','Входной контроль','Декларирование','Прочее'];
   h+='<tr><td>Цель проведения испытаний (измерений)<br><span class="sub">(отметить нужное)</span></td><td>'+pur.map(function(x){return cb(c.purpose===x)+' '+x}).join('&nbsp;&nbsp;&nbsp;')+'</td></tr>';
   h+='<tr><td>Отбор образца(ов) осуществит<br><span class="sub">(отметить нужное)</span></td><td>'+cb(c.sampler==='lab')+' Специалист ИЛ ООО «ВИКИНГ» &nbsp;&nbsp;&nbsp; '+cb(c.sampler==='cust')+' Заказчик<sup>2</sup></td></tr>';
-  h+='<tr><td>Информация о месте отбора образца(ов) и/или проведения измерений<br><span class="sub">(заполняется заказчиком в случае выезда специалиста ИЛ ООО «ВИКИНГ»)</span></td><td><span class="sub">Указать контактные данные представителя заказчика на месте отбора (проведения измерений):</span><br>'+or(c.sampler==='lab'?c.place:'—')+'</td></tr>';
+  /* Как в бланке: подпись слева объединена на две строки, справа сверху
+     адрес, снизу — контакт представителя заказчика на месте отбора. */
+  h+='<tr><td rowspan="2">Информация о месте отбора образца(ов) и/или проведения измерений<br><span class="sub">(заполняется заказчиком в случае выезда специалиста ИЛ ООО «ВИКИНГ»)</span></td><td>'+or(c.sampler==='lab'?c.place:'—')+'</td></tr>';
+  h+='<tr><td><span class="sub">Указать контактные данные представителя заказчика на месте отбора (проведения измерений):</span><br>'+or(c.sampler==='lab'?c.placeContact:'—')+'</td></tr>';
   h+='<tr><td>Оптимальные методы (методики) испытаний (измерений) выбирает</td><td>'+cb(c.methods!=='cust')+' ИЛ ООО «ВИКИНГ» <span class="sub">(в этом случае методики указываются в заявке сотрудником лаборатории и согласовываются с заказчиком)</span><br>'+cb(c.methods==='cust')+' Заказчик <span class="sub">(в этом случае методики указываются в заявке заказчиком и согласовываются сотрудником лаборатории)</span></td></tr>';
   h+='<tr><td>Необходимость расчета неопределенности измерений</td><td>'+cb(c.unc==='Да')+' Да &nbsp;&nbsp;&nbsp; '+cb(c.unc==='Нет')+' Нет</td></tr></table>';
   h+='<p class="fn"><sup>1</sup> Заказчик несёт ответственность за достоверность всей предоставленной в заявке информации и документов, а также гарантирует, что предоставленные им документы в бумажном и электронном виде идентичны, и согласен, что они будут храниться в ИЛ ООО «ВИКИНГ» и возврату не подлежат.</p>';
@@ -435,8 +438,20 @@ function printHTML(){
   h+='</td></tr>';
   h+='<tr><td>С вышеперечисленными условиями проведения испытаний (измерений) '+consent+'<br><span class="sub">(Должность / ФИО / подпись)</span></td><td style="height:18mm">&nbsp;</td></tr>';
   h+='</table>';
-  /* Раздел V (анализ заявки лабораторией) из выгрузки убран: в .docx его
-     квадраты ☐ — обычные символы, отметить их в Word нельзя. */
+  // V. Анализ заявки (заполняется лабораторией) — как в утверждённом бланке
+  h+='<h2>V. Анализ заявки (заполняется лабораторией):</h2><table class="pt agr"><colgroup><col style="width:70%"><col></colgroup>';
+  h+='<tr><td>Наличие персонала для проведения испытаний (измерений):</td><td>☐ Да &nbsp;&nbsp;&nbsp; ☐ Нет</td></tr>';
+  h+='<tr><td>Соответствует области аккредитации ИЛ ООО «ВИКИНГ»:</td><td>☐ Да &nbsp;&nbsp;&nbsp; ☐ Нет</td></tr>';
+  h+='<tr><td>Соответствие материально-технической базы ИЛ требованиям методик выполнения испытаний (измерений):</td><td>☐ Да &nbsp;&nbsp;&nbsp; ☐ Нет</td></tr>';
+  h+='<tr><td>Работа может быть выполнена в установленный срок:</td><td>☐ Да &nbsp;&nbsp;&nbsp; ☐ Нет</td></tr>';
+  h+='<tr><td>Конфликт интересов обнаружен:</td><td>☐ Да &nbsp;&nbsp;&nbsp; ☐ Нет</td></tr>';
+  h+='<tr><td>Документы предоставлены (копия ТУ, СТО, тех. карта):</td><td>☐ В полном объёме &nbsp;&nbsp;&nbsp; ☐ Не в полном объёме</td></tr>';
+  h+='<tr><td>Необходимость привлечения субподрядной лаборатории:</td><td>☐ Да &nbsp;&nbsp;&nbsp; ☐ Нет</td></tr>';
+  h+='<tr><td>Решение по анализу заявки:</td><td>☐ Принято в работу &nbsp;&nbsp;&nbsp; ☐ Отклонено</td></tr>';
+  h+='<tr><td colspan="2">В случае отклонения заявки указать причину:<div style="height:12mm"></div></td></tr>';
+  h+='<tr><td colspan="2">Анализ заявки испытаний (измерений) провёл сотрудник ИЛ ООО «ВИКИНГ»: &nbsp;&nbsp; Должность _____________________ &nbsp;&nbsp; ФИО _____________________ &nbsp;&nbsp; Подпись _____________ &nbsp;&nbsp; Дата __________</td></tr>';
+  h+='<tr><td colspan="2">В случае внесения изменений в заявку указать номер заявки взамен:</td></tr>';
+  h+='</table>';
   return h;
 }
 var TNR='font-family:"Times New Roman",Times,serif';
@@ -609,7 +624,7 @@ document.addEventListener('click',function(e){
   else if(act==='cpAktI'){var u2=+t.getAttribute('data-u');var idx=S.basket.map(function(b){return b.uid}).indexOf(u2);copyText(aktItem(S.basket[idx],idx+1).map(function(f){return f[0]+'\t'+String(f[1]).replace(/\n/g,'; ')}).join('\n'),'Образец скопирован')}
   else if(act==='same-addr'){S.c.actual=S.c.legal;fillInputs()}
   else if(act==='place-actual'){S.c.place=S.c.actual;fillInputs()}
-  else if(act==='clear-example'){S.c={org:'',inn:'',legal:'',actual:'',contact:'',cno:'',cdate:'',place:'',purpose:'Производственный контроль',sampler:'lab',methods:'lab',unc:'Нет',concl:'Нет'};S.basket=[];S.example=false;fillInputs();updateBar()}
+  else if(act==='clear-example'){S.c={org:'',inn:'',legal:'',actual:'',contact:'',cno:'',cdate:'',place:'',placeContact:'',purpose:'Производственный контроль',sampler:'lab',methods:'lab',unc:'Нет',concl:'Нет'};S.basket=[];S.example=false;fillInputs();updateBar()}
 });
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){var lw=document.getElementById('letterWrap');if(lw&&!lw.hidden){lw.hidden=true;document.body.style.overflow=''}}});
 document.addEventListener('input',function(e){
