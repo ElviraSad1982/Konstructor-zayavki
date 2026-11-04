@@ -400,23 +400,12 @@ function renderFinal(){
   h+='<div class="card" style="margin-top:12px"><b>Скачать заявку в Word</b><p class="help" style="color:var(--muted);font-size:13px;margin:4px 0 10px">Готовая заявка в формате .docx: откройте в Word, при необходимости поправьте, напечатайте и подпишите. A4, альбомная ориентация.</p><div class="row"><button class="btn pri" data-act="docx">Скачать Word (.docx)</button></div></div>';
   h+='<div class="tw pv" style="margin-top:12px">'+tableHTML(rows,true)+'</div>';
   /* agreement */
-  h+='<h3 style="margin-top:16px">Приложение для согласования показателей</h3><p class="lead" style="margin-bottom:8px">Отдельный лист, он не входит в утверждённый бланк. Отправляется вместе с заявкой, чтобы заказчик видел и согласовал показатели и нормативы.</p><div class="info">'+esc(AGREE_TXT)+'</div>'+agreeView()+'<div class="row" style="margin:10px 0"><button class="btn pri" data-act="cpAgree">Копировать таблицу согласования</button><span style="color:var(--muted);font-size:13px">Вставить в Word: Ctrl+V. Если вставилось текстом — Специальная вставка → RTF.</span></div>';
   box.innerHTML=h;
   /* Раздел IV и Итог — статическая разметка ниже, показываем вместе со строками */
   $('#finaltail').hidden=false;
 }
 
 
-var AGREE_TXT='Перечень показателей и допустимых уровней определён Заказчиком и согласован им; ответственность за выбор показателей и нормативов несёт Заказчик. Методы (методики) испытаний подбирает и применяет ИЛ ООО «ВИКИНГ».';
-function agreeRows(){var out=[];S.basket.forEach(function(b,i){b.inds.filter(function(x){return x.on}).forEach(function(x,j){out.push([j===0?(i+1)+'. '+b.name:'',x.ind,x.norm||'—',applyMethPolicy(x.ind,x.meth),j===0?b.nd:''])})});return out}
-var AH=['Образец / группа продукции','Показатель','Допустимый уровень (норматив)','Метод (подбирает ИЛ)','НД на норматив'];
-function agreeHTML(){var st='border:1px solid #000;padding:4px;vertical-align:top;font-size:10pt';var h='<p style="font-size:10pt"><b>Перечень показателей для согласования</b></p><table style="border-collapse:collapse;border:1px solid #000"><tr>'+AH.map(function(x){return '<th style="'+st+'">'+esc(x)+'</th>'}).join('')+'</tr>';agreeRows().forEach(function(r){h+='<tr>'+r.map(function(c){return '<td style="'+st+'">'+esc(c)+'</td>'}).join('')+'</tr>'});return h+'</table><p style="font-size:10pt">'+esc(AGREE_TXT)+'</p>'}
-function agreeText(){return 'Перечень показателей для согласования\n'+AH.join('\t')+'\n'+agreeRows().map(function(r){return r.join('\t')}).join('\n')+'\n'+AGREE_TXT}
-function agreeView(){
-  var h='<div class="tw"><table><tr>'+AH.map(function(x){return '<th>'+esc(x)+'</th>'}).join('')+'</tr>';
-  agreeRows().forEach(function(r){h+='<tr>'+r.map(function(c,k){return '<td'+(k===3?' class="mono"':'')+'>'+esc(c)+'</td>'}).join('')+'</tr>'});
-  return h+'</table></div>';
-}
 
 /* print view */
 function cb(on){return on?'<span class="ck">☒</span>':'<span class="ck">☐</span>'}
@@ -621,12 +610,6 @@ function copyText(text,msg){
   var fb=function(){var ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;left:-9999px;top:0';document.body.appendChild(ta);ta.select();var ok=false;try{ok=document.execCommand('copy')}catch(e){}ta.remove();toast(ok?(msg||'Скопировано'):'Не удалось скопировать, выделите текст вручную')};
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){toast(msg||'Скопировано')},fb)}else fb();
 }
-function copyRich(html,text,msg){
-  if(navigator.clipboard&&window.ClipboardItem){
-    try{navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]).then(function(){toast(msg||'Скопировано')},function(){copyText(text,msg)});return}catch(e){}
-  }
-  copyText(text,msg);
-}
 
 /* events */
 document.addEventListener('click',function(e){
@@ -648,7 +631,6 @@ document.addEventListener('click',function(e){
   else if(act==='showall'){var bs=S.basket.filter(function(x){return x.uid===+t.getAttribute('data-u')})[0];if(bs){bs.showAll=!bs.showAll;renderFinal()}}
   else if(act==='del'){var u=+t.getAttribute('data-u');S.basket=S.basket.filter(function(b){return b.uid!==u});renderFinal();updateBar()}
   else if(act==='cp'){copyText(t.getAttribute('data-v')||'')}
-  else if(act==='cpAgree'){copyRich(agreeHTML(),agreeText(),'Таблица согласования скопирована')}
   else if(act==='cpAktG'){copyText(aktGeneral().map(function(f){return f[0]+'\t'+f[1]}).join('\n'),'Общая часть акта скопирована')}
   else if(act==='cpAktI'){var u2=+t.getAttribute('data-u');var idx=S.basket.map(function(b){return b.uid}).indexOf(u2);copyText(aktItem(S.basket[idx],idx+1).map(function(f){return f[0]+'\t'+String(f[1]).replace(/\n/g,'; ')}).join('\n'),'Образец скопирован')}
   else if(act==='same-addr'){S.c.actual=S.c.legal;fillInputs()}
