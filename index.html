@@ -205,7 +205,7 @@ ul.clean li{margin:3px 0}
       </div>
     </div>
     <div class="card" style="margin-top:12px"><h3 style="margin-top:0">Итог</h3>
-      Отправьте файл Word на почту специалисту по работе с клиентами: <a href="mailto:info@laboratoriya-viking.ru"><b>info@laboratoriya-viking.ru</b></a>.
+      Скачайте файл Word (кнопка выше), подпишите его и отправьте на почту специалисту по работе с клиентами: <a href="mailto:info@laboratoriya-viking.ru"><b>info@laboratoriya-viking.ru</b></a>.
     </div>
   </div>
 </section>
@@ -751,7 +751,19 @@ var STYLES_XML='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\
  <w:style w:type="table" w:default="1" w:styleId="TableNormal"><w:name w:val="Normal Table"/><w:uiPriority w:val="99"/><w:semiHidden/><w:unhideWhenUsed/><w:tblPr><w:tblInd w:w="0" w:type="dxa"/><w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:left w:w="108" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="108" w:type="dxa"/></w:tblCellMar></w:tblPr></w:style>\
  <w:style w:type="numbering" w:default="1" w:styleId="NoList"><w:name w:val="No List"/><w:uiPriority w:val="99"/><w:semiHidden/><w:unhideWhenUsed/></w:style>\
 </w:styles>';
-function buildDocHTML(){return '<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Заявка на испытания</title><style>'+DOC_CSS+'</style></head><body>'+printHTML()+'</body></html>'}
+/* Word при импорте HTML сплошь и рядом теряет границы, заданные через
+   CSS-классы: сетка таблиц в .docx пропадает, хотя на экране она есть.
+   Поэтому в документ границы уходят ещё и атрибутом border и инлайновым
+   стилем на каждой ячейке — это Word понимает всегда. */
+function docGrid(html){
+  html=html.replace(/<table class="pt([^"]*)"/g,'<table class="pt$1" border="1" cellspacing="0" cellpadding="3" style="border-collapse:collapse;width:100%"');
+  return html.replace(/<(td|th)([^>]*)>/g,function(m,tag,attrs){
+    var b='border:1px solid #000;'+(tag==='th'?'background:#efefef;':'');
+    if(/style="/.test(attrs))return '<'+tag+attrs.replace('style="','style="'+b)+'>';
+    return '<'+tag+' style="'+b+'"'+attrs+'>';
+  });
+}
+function buildDocHTML(){return '<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Заявка на испытания</title><style>'+DOC_CSS+'</style></head><body>'+docGrid(printHTML())+'</body></html>'}
 var HEADER_XML='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\
 <w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">\
  <w:tbl>\

@@ -66,7 +66,7 @@
       </div>
     </div>
     <div class="card" style="margin-top:12px"><h3 style="margin-top:0">Итог</h3>
-      Отправьте файл Word на почту специалисту по работе с клиентами: <a href="mailto:info@laboratoriya-viking.ru"><b>info@laboratoriya-viking.ru</b></a>.
+      Скачайте файл Word (кнопка выше), подпишите его и отправьте на почту специалисту по работе с клиентами: <a href="mailto:info@laboratoriya-viking.ru"><b>info@laboratoriya-viking.ru</b></a>.
     </div>
   </div>
 </section>
