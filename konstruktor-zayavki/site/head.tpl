@@ -60,6 +60,8 @@ textarea{min-height:60px;resize:vertical}
 .btn{border:1px solid var(--line);background:var(--surface);border-radius:4px;padding:8px 14px;cursor:pointer;font-weight:500}
 .btn:hover{border-color:var(--accent)}
 .btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn[disabled]:hover{border-color:var(--line)}
 .btn.sm{padding:4px 10px;font-size:13px}
 .btn.ghost{background:transparent}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
