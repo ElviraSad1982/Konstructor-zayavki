@@ -10,7 +10,7 @@ var ALL=[];
 // FOOD: has obj field (list of mode ids where this food appears)
 FOOD.forEach(function(f){ALL.push({kind:'food',cat:f.cat,obj:f.obj||['prod','horeca'],name:f.name,nd:f.nd||'Выдать фактический результат без указания норматива',decl:!!f.decl,vid:f.vid||'Микробиология',samp:f.samp||'ГОСТ 31904-2012',form:f.form||'Пищевая продукция',note:f.note||'',items:f.items.map(function(i){return {ind:i.ind,meth:i.meth||'Выбирает ИЛ',norm:i.norm,on:i.on!==false}})})});
 // ENV: has obj field
-ENV.forEach(function(e){ALL.push({kind:'env',cat:e.cat,obj:e.obj||[],name:e.name,nd:e.nd,decl:false,vid:e.vid,samp:e.samp,form:e.form,note:e.note||'',items:e.items.map(function(i){return {ind:i.ind,meth:i.meth,norm:i.norm,on:i.on!==false}})})});
+ENV.forEach(function(e){ALL.push({kind:'env',cat:e.cat,obj:e.obj||[],name:e.name,nd:e.nd,decl:false,vid:e.vid,samp:e.samp,form:e.form,note:e.note||'',items:e.items.map(function(i){return {ind:i.ind,meth:i.meth,norm:i.norm,vid:i.vid,on:i.on!==false}})})});
 // FX: физико-химия и органолептика из области аккредитации (карточки по категориям продукции)
 FX.forEach(function(e){ALL.push({kind:'fx',cat:e.cat,obj:e.obj||['food'],name:e.name,nd:e.nd,decl:false,vid:e.vid,samp:e.samp,form:e.form,note:e.note||'',items:e.items.map(function(i){return {ind:i.ind,meth:i.meth||'Выбирает ИЛ',norm:i.norm,rang:i.rang||'',on:false}})})});
 ALL.forEach(function(a,i){a.id=i;a.hay=norm(a.name+' '+a.nd+' '+a.cat+' '+a.items.map(function(x){return x.ind}).join(' '))});
@@ -263,10 +263,10 @@ function addItem(a,on,extras){
      (например 5 смывов на БГКП и 3 на стафилококк). */
   /* В карточку кладём весь набор, а не только отмеченное на шаге 2:
      иначе забытый показатель нельзя добавить, не собирая набор заново. */
-  var inds=a.items.map(function(it,i){return {ind:it.ind,meth:it.meth,norm:it.norm,on:!!on[i]}});
+  var inds=a.items.map(function(it,i){return {ind:it.ind,meth:it.meth,norm:it.norm,vid:it.vid,on:!!on[i]}});
   var k=catKind(a);
   extras=extras||{};
-  var it={uid:S.uid++,kind:k,name:a.name,qty:extras.qty||'',di:'',note:extras.note||'',vid:a.vid,nd:a.nd,samp:a.samp,form:a.form,inds:inds,hint:noteExample(k),qhint:qtyExample(k)};
+  var it={uid:S.uid++,kind:k,name:a.name,qty:extras.qty||'',di:'',note:extras.note||'',vid:a.vid,ndSrc:a.nd,nd:ndFor(a.nd,vidsOf(inds.filter(function(x){return x.on}))),samp:a.samp,form:a.form,inds:inds,hint:noteExample(k),qhint:qtyExample(k)};
   S.basket.push(it); return it;
 }
 function totals(){var rows=allRows().length,ind=0;S.basket.forEach(function(b){b.inds.forEach(function(x){if(x.on)ind++})});return {rows:rows,ind:ind}}
@@ -306,6 +306,36 @@ function applyMethPolicy(ind,meth){
    (10 смывов на БГКП, 5 на стафилококк). В бланке «Кол-во образцов» —
    одна ячейка на строку, поэтому такие показатели уходят отдельными
    строками: группируем их по количеству, сохраняя порядок. */
+/* Вид испытаний и НД задавались на весь набор, поэтому при выборе одной
+   микробиологии в заявку всё равно уходили «микробиология, органолептика,
+   физико-химия» и все таблицы СанПиН. Теперь и то и другое считается по
+   фактически отмеченным показателям. */
+function vidsOf(inds){
+  var out=[];
+  inds.forEach(function(x){
+    var v=x.vid;
+    if(v&&out.indexOf(v)<0)out.push(v);
+  });
+  return out;
+}
+var ND_VID=[[/микробиолог/i,'Микробиология'],[/органолепт/i,'Органолептика'],
+            [/физико-?хим|общая хими|обобщённые|неорганическ/i,'Физико-химия']];
+function ndFor(nd,vids){
+  var m=String(nd||'').match(/^([^(]*)\(([^)]*)\)([\s\S]*)$/);
+  if(!m||!vids.length)return nd;
+  var parts=m[2].split(';').map(function(x){return x.trim()}).filter(Boolean);
+  var keep=[],known=true;
+  parts.forEach(function(part){
+    var v=null;
+    ND_VID.forEach(function(r){if(!v&&r[0].test(part))v=r[1]});
+    if(!v){known=false;return}
+    if(vids.indexOf(v)>=0)keep.push(part);
+  });
+  /* непонятная разметка или ничего не отобралось — строку не трогаем */
+  if(!known||!keep.length||keep.length===parts.length)return nd;
+  return m[1]+'('+keep.join('; ')+')'+m[3];
+}
+
 function rowsFor(b,startN){
   var on=b.inds.filter(function(x){return x.on});
   if(!on.length)return [];
@@ -316,7 +346,8 @@ function rowsFor(b,startN){
     map[q].inds.push(x);
   });
   return groups.map(function(g,i){
-    return {n:String(startN+i),obj:b.name,qty:g.qty,vid:b.vid,
+    var gv=vidsOf(g.inds);
+    return {n:String(startN+i),obj:b.name,qty:g.qty,vid:gv.length?gv.join(', '):b.vid,
       ind:g.inds.map(function(x){return x.ind}).join('\n'),
       meth:g.inds.map(function(x){return applyMethPolicy(x.ind,x.meth)}).join('\n'),
       samp:b.samp,nd:b.nd,note:b.note};
@@ -643,7 +674,7 @@ document.addEventListener('input',function(e){
     if(t.getAttribute('data-c')==='inn'){var v=(t.value||'').replace(/\D/g,'');var ok=v.length===10||v.length===12;var h=$('#innHelp');if(h){if(v.length>0&&!ok){h.textContent='ИНН должен содержать 10 цифр (ООО/АО) или 12 цифр (ИП). Сейчас — '+v.length+'.';h.style.color='var(--warn)'}else{h.textContent='10 цифр у организации (ООО/АО) или 12 цифр у ИП.';h.style.color=''}}}
     return}
   if(t.hasAttribute('data-iq')){var bi=S.basket.filter(function(x){return x.uid===+t.getAttribute('data-u')})[0];if(bi){bi.inds[+t.getAttribute('data-j')].qty=t.value;updateBar()}return}
-  if(t.hasAttribute('data-b')){var b=S.basket.filter(function(x){return x.uid===+t.getAttribute('data-u')})[0];if(b){b[t.getAttribute('data-b')]=t.value}return}
+  if(t.hasAttribute('data-b')){var b=S.basket.filter(function(x){return x.uid===+t.getAttribute('data-u')})[0];if(b){var kk=t.getAttribute('data-b');b[kk]=t.value;if(kk==='nd')b.ndEdited=true}return}
   if(t.hasAttribute('data-dq')&&S.checks){S.checks[t.getAttribute('data-dq')]=t.value;return}
   if(t.hasAttribute('data-cu')){S.cust[t.getAttribute('data-cu')]=t.value;var btn=document.querySelector('[data-act=cuadd]');if(btn){var ok=S.cust.name.trim()&&S.cust.inds.trim();if(ok)btn.removeAttribute('disabled');else btn.setAttribute('disabled','')}return}
   if(t.id==='sq'){S.sq=t.value;var pos=t.selectionStart;renderBrowse();var q=$('#sq');q.focus();try{q.setSelectionRange(pos,pos)}catch(x){}}
@@ -659,7 +690,7 @@ document.addEventListener('change',function(e){
   var act=t.getAttribute&&t.getAttribute('data-act');
   if(act==='chk'){S.checks.on[+t.getAttribute('data-i')]=t.checked;renderDetail()}
   if(act==='trchk'){var i=t.getAttribute('data-i');if(t.checked)S.trSel[i]=1;else delete S.trSel[i];renderBrowse()}
-  if(act==='bchk'){var b=S.basket.filter(function(x){return x.uid===+t.getAttribute('data-u')})[0];b.inds[+t.getAttribute('data-j')].on=t.checked;renderFinal();updateBar()}
+  if(act==='bchk'){var b=S.basket.filter(function(x){return x.uid===+t.getAttribute('data-u')})[0];b.inds[+t.getAttribute('data-j')].on=t.checked;if(!b.ndEdited&&b.ndSrc)b.nd=ndFor(b.ndSrc,vidsOf(b.inds.filter(function(x){return x.on})));renderFinal();updateBar()}
 });
 
 window.addEventListener('hashchange',function(){var h=(location.hash||'').replace('#','');if(['zakazchik','vybor','zayavka','pamyatka'].indexOf(h)>=0&&h!==S.tab)setTab(h,true)});
