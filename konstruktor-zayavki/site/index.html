@@ -744,7 +744,7 @@ function printHTML(){
   return h;
 }
 var TNR='font-family:"Times New Roman",Times,serif';
-var DOC_CSS='@page{size:A4 landscape;margin:1cm}body,p,div,span,td,th,h1,h2,h3,h4,table,tr,li,ol,ul,sup,sub{'+TNR+'}body{font-size:11pt;line-height:1.25;color:#000}h1{font-size:12pt;text-align:center;margin:0 0 10px;font-weight:bold}h2{font-size:11pt;margin:12px 0 4px;font-weight:bold;page-break-after:avoid}table{border-collapse:collapse;width:100%;margin:4px 0}tr{page-break-inside:avoid}td,th{page-break-inside:avoid}table.pt td,table.pt th{border:1px solid #000;padding:3px 5px;vertical-align:top;font-size:10pt}table.pt th{background:#efefef;font-weight:bold;text-align:center;font-size:10pt}table.obj td{font-size:9pt;padding:3px 4px;line-height:1.25}table.obj th{font-size:10pt;line-height:1.2;background:#efefef;font-weight:bold;text-align:center}table.agr td,table.agr th{font-size:9pt;padding:3px 5px}table.agr th{font-size:9pt;background:#efefef;font-weight:bold;text-align:center}.reg{border:1px solid #000;padding:6px 10px;width:62mm;margin-left:auto;margin-bottom:10px;font-size:10pt}.fn{font-size:9pt;margin:6px 0;font-style:italic}.sub{font-size:9pt;font-style:italic}.sig{margin-top:14px;font-size:10pt}.sig .ln{display:inline-block;border-bottom:1px solid #000;min-width:60mm}.agrs{font-size:9pt;margin:4px 0}';
+var DOC_CSS='@page{size:A4 landscape;margin:1cm}body,p,div,span,td,th,h1,h2,h3,h4,table,tr,li,ol,ul,sup,sub{'+TNR+'}body{font-size:11pt;line-height:1.25;color:#000}h1{font-size:12pt;text-align:center;margin:0 0 10px;font-weight:bold}h2{font-size:11pt;margin:12px 0 4px;font-weight:bold;page-break-after:avoid}table{border-collapse:collapse;width:100%;margin:4px 0}tr{page-break-inside:avoid}td,th{page-break-inside:avoid}table.pt td,table.pt th{border:1pt solid windowtext;padding:3px 5px;vertical-align:top;font-size:10pt}table.pt th{background:#efefef;font-weight:bold;text-align:center;font-size:10pt}table.obj td{font-size:9pt;padding:3px 4px;line-height:1.25}table.obj th{font-size:10pt;line-height:1.2;background:#efefef;font-weight:bold;text-align:center}table.agr td,table.agr th{font-size:9pt;padding:3px 5px}table.agr th{font-size:9pt;background:#efefef;font-weight:bold;text-align:center}.reg{border:1pt solid windowtext;padding:6px 10px;width:62mm;margin-left:auto;margin-bottom:10px;font-size:10pt}.fn{font-size:9pt;margin:6px 0;font-style:italic}.sub{font-size:9pt;font-style:italic}.sig{margin-top:14px;font-size:10pt}.sig .ln{display:inline-block;border-bottom:1pt solid windowtext;min-width:60mm}.agrs{font-size:9pt;margin:4px 0}';
 var STYLES_XML='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\
 <w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">\
  <w:docDefaults>\
@@ -764,10 +764,14 @@ var STYLES_XML='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\
    CSS-классы: сетка таблиц в .docx пропадает, хотя на экране она есть.
    Поэтому в документ границы уходят ещё и атрибутом border и инлайновым
    стилем на каждой ячейке — это Word понимает всегда. */
+var DOC_BRD='1pt solid windowtext';
+var DOC_MSO='mso-border-alt:solid windowtext .5pt;';
 function docGrid(html){
-  html=html.replace(/<table class="pt([^"]*)"/g,'<table class="pt$1" border="1" cellspacing="0" cellpadding="3" style="border-collapse:collapse;width:100%"');
+  /* Границы в пикселях Word при импорте HTML отбрасывает — надёжно
+     понимаются только пункты и его собственная подсказка mso-border-alt. */
+  html=html.replace(/<table class="pt([^"]*)"/g,'<table class="pt$1" border="1" cellspacing="0" cellpadding="3" style="border-collapse:collapse;width:100%;border:'+DOC_BRD+';'+DOC_MSO+'"');
   return html.replace(/<(td|th)([^>]*)>/g,function(m,tag,attrs){
-    var b='border:1px solid #000;'+(tag==='th'?'background:#efefef;':'');
+    var b='border:'+DOC_BRD+';'+DOC_MSO+(tag==='th'?'background:#efefef;':'');
     if(/style="/.test(attrs))return '<'+tag+attrs.replace('style="','style="'+b)+'>';
     return '<'+tag+' style="'+b+'"'+attrs+'>';
   });
