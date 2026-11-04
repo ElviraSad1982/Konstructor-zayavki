@@ -309,22 +309,6 @@ function tableHTML(rows,withHead){
   rows.forEach(function(r){h+='<tr>'+['n','obj','qty','vid','ind','meth','samp','nd','note'].map(function(k){return '<td style="'+st+'">'+esc(r[k]).replace(/\n/g,'<br>')+'</td>'}).join('')+'</tr>'});
   return h+'</table>';
 }
-function tableText(rows,withHead){
-  var q=function(s){s=String(s||'');return /[\t\n"]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
-  var lines=[];if(withHead)lines.push(HEAD.join('\t'));
-  rows.forEach(function(r){lines.push(['n','obj','qty','vid','ind','meth','samp','nd','note'].map(function(k){return q(r[k])}).join('\t'))});
-  return lines.join('\n');
-}
-function sectionI(){
-  var c=S.c;
-  return [['Наименование организации и ИНН заказчика',c.org+(c.inn?', ИНН '+c.inn:'')],['Юридический адрес заказчика',c.legal],['Фактический адрес заказчика',c.actual],['Контактные данные заказчика для согласования заявки',c.contact]];
-}
-function sectionII(){
-  var c=S.c;
-  return [['Цель проведения испытаний (измерений)',c.purpose],['Отбор образца(ов) осуществит',c.sampler==='lab'?'Специалист ИЛ ООО «ВИКИНГ»':'Заказчик'],['Информация о месте отбора образца(ов) и/или проведения измерений',c.sampler==='lab'?c.place:'—'],['Оптимальные методы (методики) испытаний (измерений) выбирает',(c.methods==='cust'?'☐ ИЛ ООО «ВИКИНГ» (методики указываются сотрудником ИЛ и согласовываются с заказчиком)\n☒ Заказчик (методики указываются заказчиком и согласовываются с ИЛ)':'☒ ИЛ ООО «ВИКИНГ» (методики указываются сотрудником ИЛ и согласовываются с заказчиком)\n☐ Заказчик (методики указываются заказчиком и согласовываются с ИЛ)')],['Необходимость расчета неопределенности измерений',c.unc]];
-}
-function kvHTML(pairs){var st='border:1px solid #000;padding:4px;font-size:10pt;vertical-align:top';return '<table style="border-collapse:collapse;border:1px solid #000">'+pairs.map(function(p){return '<tr><td style="'+st+'">'+esc(p[0])+'</td><td style="'+st+'">'+esc(p[1]).replace(/\n/g,'<br>')+'</td></tr>'}).join('')+'</table>'}
-function kvText(pairs){return pairs.map(function(p){return p[0]+'\t'+String(p[1]).replace(/\n/g,' ')}).join('\n')}
 
 function aktGeneral(){
   var c=S.c;
@@ -341,9 +325,6 @@ function aktItem(b,n){
   out.push(['Вид испытаний',b.vid,1],['НД, устанавливающий допустимый уровень',b.nd,1],['Перечень требуемых показателей',r.ind,1],['НД на метод отбора',b.samp,1]);
   if(b.note)out.push(['Примечание',b.note,1]);
   return out;
-}
-function kvRows(list,prefix){
-  return list.map(function(f,i){return '<div class="kv"><div class="k">'+esc(f[0])+(f[2]?' <span class="chip">как в заявке</span>':'')+'</div><div class="v">'+(f[1]?esc(f[1]):'<span style="color:var(--muted)">заполните на шаге 1 или 3</span>')+'</div><button class="btn sm" data-act="cp" data-v="'+esc(f[1])+'">Копировать</button></div>'}).join('');
 }
 
 function renderFinal(){
@@ -394,200 +375,198 @@ function agreeView(){
 /* print view */
 function cb(on){return on?'<span class="ck">☒</span>':'<span class="ck">☐</span>'}
 function or(v,ph){return v?esc(v):'<span style="color:#888">'+esc(ph||'—')+'</span>'}
-function printHTML(){
-  var c=S.c,rows=S.basket.map(function(b,i){return rowData(b,i+1)});
-  var h='<div class="reg">Регистрационный номер<br>№ ________________________<br><span class="sub">(заполняет специалист ИЛ ООО «ВИКИНГ»)</span></div>';
-  h+='<h1>ЗАЯВКА<sup>1</sup> НА ПРОВЕДЕНИЕ ИСПЫТАНИЙ (ИЗМЕРЕНИЙ) ПО ДОГОВОРУ № '+or(c.cno,'______')+' от '+or(c.cdate,'__________')+'</h1>';
-  h+='<h2>I. Информация о Заказчике:</h2><table class="pt"><colgroup><col style="width:48%"><col></colgroup>';
-  h+='<tr><td>Наименование организации и ИНН заказчика</td><td>'+or(c.org+(c.inn?', ИНН '+c.inn:''))+'</td></tr>';
-  h+='<tr><td>Юридический адрес заказчика<br><span class="sub">(в соответствии с записью в ЕГРЮЛ, ЕГРИП)</span></td><td>'+or(c.legal)+'</td></tr>';
-  h+='<tr><td>Фактический адрес заказчика<br><span class="sub">(место осуществления деятельности)</span></td><td>'+or(c.actual)+'</td></tr>';
-  h+='<tr><td>Контактные данные заказчика для согласования заявки<br><span class="sub">(телефон, е-mail, ФИО, должность)</span></td><td>'+or(c.contact)+'</td></tr></table>';
-  h+='<h2>II. Заказчик просит провести лабораторные испытания (измерения):</h2><table class="pt"><colgroup><col style="width:48%"><col></colgroup>';
-  var pur=['Производственный контроль','Входной контроль','Декларирование','Прочее'];
-  h+='<tr><td>Цель проведения испытаний (измерений)<br><span class="sub">(отметить нужное)</span></td><td>'+pur.map(function(x){return cb(c.purpose===x)+' '+x}).join('&nbsp;&nbsp;&nbsp;')+'</td></tr>';
-  h+='<tr><td>Отбор образца(ов) осуществит<br><span class="sub">(отметить нужное)</span></td><td>'+cb(c.sampler==='lab')+' Специалист ИЛ ООО «ВИКИНГ» &nbsp;&nbsp;&nbsp; '+cb(c.sampler==='cust')+' Заказчик<sup>2</sup></td></tr>';
-  /* Как в бланке: подпись слева объединена на две строки, справа сверху
-     адрес, снизу — контакт представителя заказчика на месте отбора. */
-  h+='<tr><td rowspan="2">Информация о месте отбора образца(ов) и/или проведения измерений<br><span class="sub">(заполняется заказчиком в случае выезда специалиста ИЛ ООО «ВИКИНГ»)</span></td><td>'+or(c.sampler==='lab'?c.place:'—')+'</td></tr>';
-  h+='<tr><td><span class="sub">Указать контактные данные представителя заказчика на месте отбора (проведения измерений):</span><br>'+or(c.sampler==='lab'?c.placeContact:'—')+'</td></tr>';
-  h+='<tr><td>Оптимальные методы (методики) испытаний (измерений) выбирает</td><td>'+cb(c.methods!=='cust')+' ИЛ ООО «ВИКИНГ» <span class="sub">(в этом случае методики указываются в заявке сотрудником лаборатории и согласовываются с заказчиком)</span><br>'+cb(c.methods==='cust')+' Заказчик <span class="sub">(в этом случае методики указываются в заявке заказчиком и согласовываются сотрудником лаборатории)</span></td></tr>';
-  h+='<tr><td>Необходимость расчета неопределенности измерений</td><td>'+cb(c.unc==='Да')+' Да &nbsp;&nbsp;&nbsp; '+cb(c.unc==='Нет')+' Нет</td></tr></table>';
-  h+='<p class="fn"><sup>1</sup> Заказчик несёт ответственность за достоверность всей предоставленной в заявке информации и документов, а также гарантирует, что предоставленные им документы в бумажном и электронном виде идентичны, и согласен, что они будут храниться в ИЛ ООО «ВИКИНГ» и возврату не подлежат.</p>';
-  h+='<p class="fn"><sup>2</sup> Заказчик, в случае самостоятельного проведения отбора образца(ов), уведомлён о необходимости соблюдения правил отбора образца(ов), сроков и условий транспортировки образца(ов) в ИЛ и несёт ответственность за их выполнение. В этом случае ответственность ИЛ ООО «ВИКИНГ» не распространяется на выполнение требований раздела «Отбор проб» методик, указанных в протоколе испытаний. Акт(ы) отбора образца(ов) оформляются Заказчиком самостоятельно.</p>';
-  h+='<h2>III. Информация об объекте испытаний (измерений):</h2><table class="pt obj"><colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5"><col class="c6"><col class="c7"><col class="c8"><col class="c9"></colgroup>';
-  h+='<tr><th>№ п/п</th><th>Объект испытаний (измерений)<br><span class="sub">(наименование — в соответствии с НД, спецификацией, маркировкой)</span></th><th>Кол-во образцов / измерений</th><th>Вид испытаний<br><span class="sub">(микробиология, физ.-химия, паразитология, органолептика, физ.-факторы)</span></th><th>Перечень определяемых показателей</th><th>Метод (методика) испытаний (измерений)</th><th>Метод (методика) отбора образца(ов)<sup>3</sup></th><th>НД, устанавливающий(е) допустимый уровень<br><span class="sub">(ТУ, СТО, ГОСТ, ТР ТС и т.д.; при отсутствии документа — «выдать фактический результат без указания норматива»)</span></th><th>Примечания</th></tr>';
-  if(!rows.length){h+='<tr>'+Array(9).join('</td><td>&nbsp;').replace(/^.{5}/,'<td>')+'</td></tr>'}
-  rows.forEach(function(r){h+='<tr>'+['n','obj','qty','vid','ind','meth','samp','nd','note'].map(function(k){return '<td>'+esc(r[k]).replace(/\n/g,'<br>')+'</td>'}).join('')+'</tr>'});
-  h+='</table><p class="fn"><sup>3</sup> Заказчик, в случае самостоятельного проведения отбора образца(ов), указывает методы (методики) на отбор в акте отбора. При отсутствии такой записи в протоколе испытаний в графе «НД на метод отбора» будет стоять прочерк.</p>';
-  // IV. Согласование с заказчиком — все галочки по умолчанию ☒ (заказчик может снять через UI)
-  var A=c.agree||{};
-  function ac(k){return (A[k]!==false)?'☒':'☐'}
-  var disc=(c.discardMode==='with')?'в его присутствии':'без его присутствия';
-  var consent=(c.consent==='no')?'☐ Согласен &nbsp;&nbsp;&nbsp; ☒ Не согласен':'☒ Согласен &nbsp;&nbsp;&nbsp; ☐ Не согласен';
-  h+='<h2>IV. Согласование с заказчиком:</h2><table class="pt agr"><colgroup><col style="width:42%"><col></colgroup>';
-  h+='<tr><td>Заказчик подтверждает, что<br><span class="sub">(необходимо поставить галочки)</span></td><td>';
-  h+=ac('oa')+' ознакомлен с областью аккредитации ИЛ ООО «ВИКИНГ» (<a href="https://pub.fsa.gov.ru/ral/view/16581/current-aa">https://pub.fsa.gov.ru/ral/view/16581/current-aa</a>);<br>';
-  h+=ac('meth')+' ознакомлен с выбранными методами испытаний (измерений) и отбора проб в случае предоставления права выбора лаборатории;<br>';
-  h+=ac('color')+' согласен на оформление результатов цветности воды без указания температуры анализируемой пробы, в соответствии с п. 4.5 ГОСТ 31868-2012, поскольку проведение испытаний в ИЛ ООО «ВИКИНГ» осуществляется при постоянной комнатной температуре (20±5) °C. Регистрация температуры осуществляется в журнале установленной формы ф.002 (И-001);<br>';
-  h+=ac('samples')+' ознакомлен о необходимом количестве образцов для проведения испытаний;<br>';
-  h+=ac('pay')+' гарантирует оплату по проведению лабораторных испытаний (измерений);<br>';
-  h+=ac('terms')+' уведомлён о сроках проведения лабораторных испытаний (измерений);<br>';
-  h+=ac('return')+' ознакомлен с порядком возврата (списания) образцов продукции: образцы после микробиологических испытаний, скоропортящейся продукции и образцы, подвергшиеся разрушающим методам воздействия, возврату не подлежат. Заказчик просит списать <b>'+disc+'</b>;<br>';
-  h+=ac('pdn')+' даёт согласие на обработку персональных данных, указанных в заявке и прилагаемых документах, в соответствии с Федеральным законом от 27.07.2006 № 152-ФЗ «О персональных данных».';
-  h+='</td></tr>';
-  h+='<tr><td>С вышеперечисленными условиями проведения испытаний (измерений) '+consent+'<br><span class="sub">(Должность / ФИО / подпись)</span></td><td style="height:18mm">&nbsp;</td></tr>';
-  h+='</table>';
-  // V. Анализ заявки (заполняется лабораторией) — как в утверждённом бланке
-  h+='<h2>V. Анализ заявки (заполняется лабораторией):</h2><table class="pt agr"><colgroup><col style="width:70%"><col></colgroup>';
-  h+='<tr><td>Наличие персонала для проведения испытаний (измерений):</td><td>☐ Да &nbsp;&nbsp;&nbsp; ☐ Нет</td></tr>';
-  h+='<tr><td>Соответствует области аккредитации ИЛ ООО «ВИКИНГ»:</td><td>☐ Да &nbsp;&nbsp;&nbsp; ☐ Нет</td></tr>';
-  h+='<tr><td>Соответствие материально-технической базы ИЛ требованиям методик выполнения испытаний (измерений):</td><td>☐ Да &nbsp;&nbsp;&nbsp; ☐ Нет</td></tr>';
-  h+='<tr><td>Работа может быть выполнена в установленный срок:</td><td>☐ Да &nbsp;&nbsp;&nbsp; ☐ Нет</td></tr>';
-  h+='<tr><td>Конфликт интересов обнаружен:</td><td>☐ Да &nbsp;&nbsp;&nbsp; ☐ Нет</td></tr>';
-  h+='<tr><td>Документы предоставлены (копия ТУ, СТО, тех. карта):</td><td>☐ В полном объёме &nbsp;&nbsp;&nbsp; ☐ Не в полном объёме</td></tr>';
-  h+='<tr><td>Необходимость привлечения субподрядной лаборатории:</td><td>☐ Да &nbsp;&nbsp;&nbsp; ☐ Нет</td></tr>';
-  h+='<tr><td>Решение по анализу заявки:</td><td>☐ Принято в работу &nbsp;&nbsp;&nbsp; ☐ Отклонено</td></tr>';
-  h+='<tr><td colspan="2">В случае отклонения заявки указать причину:<div style="height:12mm"></div></td></tr>';
-  h+='<tr><td colspan="2">Анализ заявки испытаний (измерений) провёл сотрудник ИЛ ООО «ВИКИНГ»: &nbsp;&nbsp; Должность _____________________ &nbsp;&nbsp; ФИО _____________________ &nbsp;&nbsp; Подпись _____________ &nbsp;&nbsp; Дата __________</td></tr>';
-  h+='<tr><td colspan="2">В случае внесения изменений в заявку указать номер заявки взамен:</td></tr>';
-  h+='</table>';
-  return h;
-}
-var TNR='font-family:"Times New Roman",Times,serif';
-var DOC_CSS='@page{size:A4 landscape;margin:1cm}body,p,div,span,td,th,h1,h2,h3,h4,table,tr,li,ol,ul,sup,sub{'+TNR+'}body{font-size:11pt;line-height:1.25;color:#000}h1{font-size:12pt;text-align:center;margin:0 0 10px;font-weight:bold}h2{font-size:11pt;margin:12px 0 4px;font-weight:bold;page-break-after:avoid}table{border-collapse:collapse;width:100%;margin:4px 0}tr{page-break-inside:avoid}td,th{page-break-inside:avoid}table.pt td,table.pt th{border:1pt solid windowtext;padding:3px 5px;vertical-align:top;font-size:10pt}table.pt th{background:#efefef;font-weight:bold;text-align:center;font-size:10pt}table.obj td{font-size:9pt;padding:3px 4px;line-height:1.25}table.obj th{font-size:10pt;line-height:1.2;background:#efefef;font-weight:bold;text-align:center}table.agr td,table.agr th{font-size:9pt;padding:3px 5px}table.agr th{font-size:9pt;background:#efefef;font-weight:bold;text-align:center}.reg{border:1pt solid windowtext;padding:6px 10px;width:62mm;margin-left:auto;margin-bottom:10px;font-size:10pt}.fn{font-size:9pt;margin:6px 0;font-style:italic}.sub{font-size:9pt;font-style:italic}.sig{margin-top:14px;font-size:10pt}.sig .ln{display:inline-block;border-bottom:1pt solid windowtext;min-width:60mm}.agrs{font-size:9pt;margin:4px 0}';
-var STYLES_XML='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\
-<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">\
- <w:docDefaults>\
-  <w:rPrDefault><w:rPr>\
-   <w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman" w:eastAsia="Times New Roman"/>\
-   <w:sz w:val="22"/><w:szCs w:val="22"/>\
-   <w:lang w:val="ru-RU" w:eastAsia="ru-RU" w:bidi="ar-SA"/>\
-  </w:rPr></w:rPrDefault>\
-  <w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="276" w:lineRule="auto"/></w:pPr></w:pPrDefault>\
- </w:docDefaults>\
- <w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/></w:rPr></w:style>\
- <w:style w:type="character" w:default="1" w:styleId="DefaultParagraphFont"><w:name w:val="Default Paragraph Font"/><w:uiPriority w:val="1"/><w:semiHidden/><w:unhideWhenUsed/></w:style>\
- <w:style w:type="table" w:default="1" w:styleId="TableNormal"><w:name w:val="Normal Table"/><w:uiPriority w:val="99"/><w:semiHidden/><w:unhideWhenUsed/><w:tblPr><w:tblInd w:w="0" w:type="dxa"/><w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:left w:w="108" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="108" w:type="dxa"/></w:tblCellMar></w:tblPr></w:style>\
- <w:style w:type="numbering" w:default="1" w:styleId="NoList"><w:name w:val="No List"/><w:uiPriority w:val="99"/><w:semiHidden/><w:unhideWhenUsed/></w:style>\
-</w:styles>';
-/* Word при импорте HTML сплошь и рядом теряет границы, заданные через
-   CSS-классы: сетка таблиц в .docx пропадает, хотя на экране она есть.
-   Поэтому в документ границы уходят ещё и атрибутом border и инлайновым
-   стилем на каждой ячейке — это Word понимает всегда. */
-var DOC_BRD='1pt solid windowtext';
-var DOC_MSO='mso-border-alt:solid windowtext .5pt;';
-function docGrid(html){
-  /* Границы в пикселях Word при импорте HTML отбрасывает — надёжно
-     понимаются только пункты и его собственная подсказка mso-border-alt. */
-  html=html.replace(/<table class="pt([^"]*)"/g,'<table class="pt$1" border="1" cellspacing="0" cellpadding="3" style="border-collapse:collapse;width:100%;border:'+DOC_BRD+';'+DOC_MSO+'"');
-  return html.replace(/<(td|th)([^>]*)>/g,function(m,tag,attrs){
-    var b='border:'+DOC_BRD+';'+DOC_MSO+(tag==='th'?'background:#efefef;':'');
-    if(/style="/.test(attrs))return '<'+tag+attrs.replace('style="','style="'+b)+'>';
-    return '<'+tag+' style="'+b+'"'+attrs+'>';
-  });
-}
-function buildDocHTML(){return '<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Заявка на испытания</title><style>'+DOC_CSS+'</style></head><body>'+docGrid(printHTML())+'</body></html>'}
-var HEADER_XML='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\
-<w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">\
- <w:tbl>\
-  <w:tblPr><w:tblW w:w="5000" w:type="pct"/><w:tblLayout w:type="fixed"/><w:tblLook w:val="04A0"/></w:tblPr>\
-  <w:tblGrid><w:gridCol w:w="3200"/><w:gridCol w:w="7600"/><w:gridCol w:w="3200"/></w:tblGrid>\
-  <w:tr>\
-   <w:tc><w:tcPr><w:tcW w:w="3200" w:type="dxa"/></w:tcPr>\
-    <w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>ООО «ВИКИНГ»</w:t></w:r></w:p>\
-   </w:tc>\
-   <w:tc><w:tcPr><w:tcW w:w="7600" w:type="dxa"/></w:tcPr>\
-    <w:p><w:pPr><w:jc w:val="center"/><w:spacing w:after="0"/></w:pPr><w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t xml:space="preserve">ф.003 (И-010)   Заявка на проведение испытаний и измерений</w:t></w:r></w:p>\
-    <w:p><w:pPr><w:jc w:val="center"/><w:spacing w:after="0"/></w:pPr><w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>Администрация и СМК</w:t></w:r></w:p>\
-   </w:tc>\
-   <w:tc><w:tcPr><w:tcW w:w="3200" w:type="dxa"/></w:tcPr>\
-    <w:p><w:pPr><w:jc w:val="right"/><w:spacing w:after="0"/></w:pPr><w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>Ред. 4</w:t></w:r></w:p>\
-    <w:p><w:pPr><w:jc w:val="right"/><w:spacing w:after="0"/></w:pPr><w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t xml:space="preserve">Стр. </w:t></w:r>\
-     <w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r>\
-     <w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t xml:space="preserve"> из </w:t></w:r>\
-     <w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> NUMPAGES </w:instrText></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r>\
-    </w:p>\
-   </w:tc>\
-  </w:tr>\
- </w:tbl>\
- <w:p><w:pPr><w:spacing w:after="0"/></w:pPr></w:p>\
-</w:hdr>';
+/* Заполнение утверждённого бланка заявки.
 
-async function injectHeader(blob){
-  if(typeof JSZip==='undefined')return blob;
-  try{
-    var ab=await blob.arrayBuffer();
-    var zip=await JSZip.loadAsync(ab);
-    zip.file('word/header1.xml',HEADER_XML);
-    // force Times New Roman as default font
-    try{
-      var hadStyles=!!zip.file('word/styles.xml');
-      zip.file('word/styles.xml',STYLES_XML);
-      if(!hadStyles){
-        var ct0=await zip.file('[Content_Types].xml').async('string');
-        if(ct0.indexOf('styles+xml')<0){
-          ct0=ct0.replace('</Types>','<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>');
-          zip.file('[Content_Types].xml',ct0);
-        }
-        var rels0=await zip.file('word/_rels/document.xml.rels').async('string');
-        if(rels0.indexOf('/styles"')<0){
-          var sId='rIdStyles';
-          rels0=rels0.replace('</Relationships>','<Relationship Id="'+sId+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>');
-          zip.file('word/_rels/document.xml.rels',rels0);
-        }
+   Файл собирается не из HTML, а из самого бланка ООО «ВИКИНГ»: JSZip
+   распаковывает .docx, здесь правится word/document.xml, архив пакуется
+   обратно. Поэтому сетка, шрифты, колонтитул ф.003 и — главное —
+   интерактивные флажки Раздела V остаются ровно такими, как в бланке. */
+var WNS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+
+function xEl(doc, name) { return doc.createElementNS(WNS, name); }
+function xAll(el, name) { return el.getElementsByTagName(name); }
+
+/* прямые потомки — getElementsByTagName ушёл бы и во вложенные узлы */
+function xKids(el, name) {
+  var out = [], n = el.firstChild;
+  for (; n; n = n.nextSibling) {
+    if (n.nodeType === 1 && n.nodeName === name) out.push(n);
+  }
+  return out;
+}
+
+/* ран с текстом; переводы строк становятся мягкими переносами */
+function xRun(doc, text, rPr) {
+  var r = xEl(doc, 'w:r');
+  if (rPr) r.appendChild(rPr.cloneNode(true));
+  var lines = String(text == null ? '' : text).split('\n');
+  for (var i = 0; i < lines.length; i++) {
+    if (i) r.appendChild(xEl(doc, 'w:br'));
+    var t = xEl(doc, 'w:t');
+    t.setAttribute('xml:space', 'preserve');
+    t.appendChild(doc.createTextNode(lines[i]));
+    r.appendChild(t);
+  }
+  return r;
+}
+
+/* оформление первого рана абзаца — чтобы подставленный текст не выбивался */
+function xRPr(p) {
+  var rs = xKids(p, 'w:r');
+  if (!rs.length) return null;
+  var rp = xKids(rs[0], 'w:rPr');
+  return rp.length ? rp[0] : null;
+}
+
+/* заменить всё содержимое ячейки одним абзацем */
+function xCellSet(doc, tc, text) {
+  var ps = xKids(tc, 'w:p');
+  var p = ps[0];
+  if (!p) { p = xEl(doc, 'w:p'); tc.appendChild(p); }
+  for (var i = ps.length - 1; i > 0; i--) tc.removeChild(ps[i]);
+  var rPr = xRPr(p);
+  var rs = xKids(p, 'w:r');
+  for (var j = rs.length - 1; j >= 0; j--) p.removeChild(rs[j]);
+  p.appendChild(xRun(doc, text, rPr));
+}
+
+/* дописать абзац, сохранив то, что в ячейке уже напечатано в бланке */
+function xCellAdd(doc, tc, text) {
+  var ps = xKids(tc, 'w:p');
+  var rPr = ps.length ? xRPr(ps[ps.length - 1]) : null;
+  var p = xEl(doc, 'w:p');
+  p.appendChild(xRun(doc, text, rPr));
+  tc.appendChild(p);
+}
+
+/* переключить i-й флажок в пределах узла: и состояние, и видимый символ */
+function xBox(scope, i, on) {
+  var bs = xAll(scope, 'w14:checkbox');
+  if (i >= bs.length) return false;
+  var cb = bs[i];
+  var ch = xAll(cb, 'w14:checked')[0];
+  if (ch) ch.setAttribute('w14:val', on ? '1' : '0');
+  var sdt = cb.parentNode && cb.parentNode.parentNode;
+  if (sdt) {
+    var ts = xAll(sdt, 'w:t');
+    if (ts.length) {
+      while (ts[0].firstChild) ts[0].removeChild(ts[0].firstChild);
+      ts[0].appendChild(sdt.ownerDocument.createTextNode(on ? '☒' : '☐'));
+    }
+  }
+  return true;
+}
+
+var TPL_KEYS = ['n', 'obj', 'qty', 'vid', 'ind', 'meth', 'samp', 'nd', 'note'];
+var TPL_PURP = ['Производственный контроль', 'Входной контроль', 'Декларирование'];
+var TPL_AGREE = ['oa', 'meth', 'color', 'samples', 'pay', 'terms', 'return', 'pdn'];
+
+function fillBlank(xml, d) {
+  var doc = new DOMParser().parseFromString(xml, 'application/xml');
+  var tb = xAll(doc, 'w:tbl');
+  var T1 = tb[1], T2 = tb[2], T3 = tb[3], T4 = tb[4];
+  var rows = function (t) { return xKids(t, 'w:tr'); };
+  var cells = function (tr) { return xKids(tr, 'w:tc'); };
+  var i, k;
+
+  /* шапка: номер и дата договора лежат одним раном с подчёркиваниями */
+  var ps = xAll(doc, 'w:p');
+  for (i = 0; i < ps.length; i++) {
+    var ts = xAll(ps[i], 'w:t');
+    for (k = 0; k < ts.length; k++) {
+      if (/_{5,}от\s*_{5,}/.test(ts[k].textContent || '')) {
+        while (ts[k].firstChild) ts[k].removeChild(ts[k].firstChild);
+        ts[k].appendChild(doc.createTextNode(
+          ' ' + (d.cno || '____________') + ' от ' + (d.cdate || '____________')));
+        i = ps.length;
+        break;
       }
-    }catch(e){}
-    // rels
-    var relsPath='word/_rels/document.xml.rels';
-    var rels=await zip.file(relsPath).async('string');
-    var max=0;rels.replace(/Id="rId(\d+)"/g,function(_,n){var i=parseInt(n,10);if(i>max)max=i;return _});
-    var newId='rId'+(max+1);
-    rels=rels.replace('</Relationships>','<Relationship Id="'+newId+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/></Relationships>');
-    zip.file(relsPath,rels);
-    // content types
-    var ct=await zip.file('[Content_Types].xml').async('string');
-    if(ct.indexOf('header+xml')<0){
-      ct=ct.replace('</Types>','<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/></Types>');
-      zip.file('[Content_Types].xml',ct);
     }
-    // document.xml: add headerReference inside sectPr and widen top margin
-    var doc=await zip.file('word/document.xml').async('string');
-    var ref='<w:headerReference xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" w:type="default" r:id="'+newId+'"/>';
-    if(/<w:sectPr(\s[^>]*)?\s*\/>/.test(doc)){
-      doc=doc.replace(/<w:sectPr(\s[^>]*)?\s*\/>/,'<w:sectPr$1>'+ref+'</w:sectPr>');
-    }else{
-      doc=doc.replace(/<w:sectPr(\s[^>]*)?>/,'<w:sectPr$1>'+ref);
+  }
+
+  /* I. Информация о Заказчике */
+  var r1 = rows(T1);
+  xCellSet(doc, cells(r1[0])[1], d.org + (d.inn ? ', ИНН ' + d.inn : ''));
+  xCellSet(doc, cells(r1[1])[1], d.legal);
+  xCellSet(doc, cells(r1[2])[1], d.actual);
+  xCellSet(doc, cells(r1[3])[1], d.contact);
+
+  /* II. Цель, отбор, методики, неопределённость */
+  var pi = TPL_PURP.indexOf(d.purpose);
+  if (pi < 0) pi = 3;                       /* «Прочее» */
+  for (i = 0; i < 4; i++) xBox(T2, i, i === pi);
+  xBox(T2, 4, d.sampler === 'lab'); xBox(T2, 5, d.sampler !== 'lab');
+  xBox(T2, 6, d.methods === 'lab'); xBox(T2, 7, d.methods !== 'lab');
+  xBox(T2, 8, d.unc === 'Да');      xBox(T2, 9, d.unc !== 'Да');
+
+  var r2 = rows(T2), lab = d.sampler === 'lab';
+  xCellSet(doc, cells(r2[2])[1], lab ? d.place : '—');
+  xCellAdd(doc, cells(r2[3])[1], lab ? d.placeContact : '—');
+
+  /* III. Объекты испытаний: в бланке 6 строк-заготовок */
+  var r3 = rows(T3), n = d.rows.length, tmpl = r3[2];
+  for (i = r3.length - 2; i < n; i++) T3.appendChild(tmpl.cloneNode(true));
+  r3 = rows(T3);
+  for (i = 0; i < n; i++) {
+    var tcs = cells(r3[2 + i]);
+    for (k = 0; k < 9 && k < tcs.length; k++) {
+      xCellSet(doc, tcs[k], k === 0 ? String(i + 1) : d.rows[i][TPL_KEYS[k]]);
     }
-    // make sure header has room
-    if(/<w:pgMar[^\/]*\/>/.test(doc)){
-      doc=doc.replace(/<w:pgMar([^\/]*)\/>/,function(_,attrs){
-        attrs=attrs.replace(/\sw:top="\d+"/,' w:top="1600"').replace(/\sw:header="\d+"/,'');
-        if(attrs.indexOf('w:top=')<0)attrs+=' w:top="1600"';
-        return '<w:pgMar'+attrs+' w:header="500"/>';
-      });
-    }
-    zip.file('word/document.xml',doc);
-    return await zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
-  }catch(e){console.warn('header inject failed',e);return blob}
+  }
+  r3 = rows(T3);
+  for (i = r3.length - 1; i >= 2 + n; i--) T3.removeChild(r3[i]);
+
+  /* IV. Согласование — порядок пунктов совпадает с бланком */
+  for (i = 0; i < 8; i++) xBox(T4, i, d.agree[TPL_AGREE[i]] !== false);
+  xBox(T4, 8, d.consent === 'yes');
+  xBox(T4, 9, d.consent !== 'yes');
+
+  /* V. Анализ заявки не трогаем: его флажки заполняет лаборатория */
+  return new XMLSerializer().serializeToString(doc);
+}
+
+/* Утверждённый бланк заявки, зашитый в страницу при сборке (build.py). */
+var BLANK_B64='__BLANK__';
+
+function b64ToU8(b64){
+  var s=atob(b64),a=new Uint8Array(s.length);
+  for(var i=0;i<s.length;i++)a[i]=s.charCodeAt(i);
+  return a;
+}
+
+function docxData(){
+  var c=S.c;
+  return {org:c.org,inn:c.inn,legal:c.legal,actual:c.actual,contact:c.contact,
+    cno:c.cno,cdate:c.cdate,purpose:c.purpose,sampler:c.sampler,methods:c.methods,
+    unc:c.unc,place:c.place,placeContact:c.placeContact,agree:c.agree,
+    consent:c.consent,rows:S.basket.map(function(b,i){return rowData(b,i+1)})};
 }
 
 function saveDocx(){
-  if(typeof htmlDocx==='undefined'){toast('Библиотека для Word ещё грузится, попробуйте через несколько секунд');return}
-  var blob;
-  try{blob=htmlDocx.asBlob(buildDocHTML(),{orientation:'landscape',margins:{top:1600,right:720,bottom:720,left:720,header:500,footer:500}})}
-  catch(e){toast('Не удалось собрать Word-файл: '+(e&&e.message||e));return}
+  if(typeof JSZip==='undefined'){toast('Библиотека ещё грузится, попробуйте через несколько секунд');return}
   var fn='Заявка '+(S.c.org||'без имени').replace(/[\\\/:*?"<>|]/g,'').slice(0,80)+'.docx';
-  injectHeader(blob).then(function(finalBlob){
+  JSZip.loadAsync(b64ToU8(BLANK_B64)).then(function(zip){
+    return zip.file('word/document.xml').async('string').then(function(xml){
+      zip.file('word/document.xml',fillBlank(xml,docxData()));
+      return zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+    });
+  }).then(function(blob){
     var p=window.claude&&window.claude.use?window.claude.use('downloads'):null;
-    Promise.resolve(p).then(function(dl){
+    return Promise.resolve(p).then(function(dl){
       if(!dl){
-        try{var a=document.createElement('a');a.href=URL.createObjectURL(finalBlob);a.download=fn;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href)},2000);toast('Если файл не сохранился, попробуйте ещё раз или откройте страницу в другом браузере.')}catch(e){toast('Скачивание недоступно в этом окне. Откройте страницу в Chrome, Edge или Safari.')}
+        try{
+          var a=document.createElement('a');
+          a.href=URL.createObjectURL(blob);a.download=fn;
+          document.body.appendChild(a);a.click();a.remove();
+          setTimeout(function(){URL.revokeObjectURL(a.href)},2000);
+        }catch(e){toast('Скачивание недоступно в этом окне. Откройте страницу в Chrome, Edge или Safari.')}
         return;
       }
-      dl.save({filename:fn,data:finalBlob}).then(function(){toast('Файл сохранён')},function(e){if(!e||e.code!=='declined')toast('Не удалось сохранить файл ('+(e&&e.code||'ошибка')+')')});
+      return dl.save({filename:fn,data:blob}).then(
+        function(){toast('Файл сохранён')},
+        function(e){if(!e||e.code!=='declined')toast('Не удалось сохранить файл')});
     });
-  });
+  }).catch(function(e){toast('Не удалось собрать Word-файл: '+(e&&e.message||e))});
 }
 
 /* clipboard */
@@ -602,7 +581,6 @@ function copyRich(html,text,msg){
   }
   copyText(text,msg);
 }
-function allRows(){return S.basket.map(function(b,i){return rowData(b,i+1)})}
 
 /* events */
 document.addEventListener('click',function(e){

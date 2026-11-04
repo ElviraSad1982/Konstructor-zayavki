@@ -15,6 +15,7 @@
 Папка site/ — исходники и собранный index.html + app.built.js.
 """
 
+import base64
 import json
 import re
 import pathlib
@@ -82,12 +83,16 @@ def main() -> int:
     tr = load_tr()
     env = load_env()
     print(f"       продуктов: {len(food)}, строк TR ТС: {len(tr)}, объектов env: {len(env)}")
+    print(f"       бланк заявки: {(DATA / 'blank_zayavka.docx').stat().st_size} байт")
 
     print("3/4  Собираю app.built.js и index.html…")
+    blank = base64.b64encode(
+        (DATA / "blank_zayavka.docx").read_bytes()).decode("ascii")
     js = (
         js.replace("__FOOD__", minify_json(food))
           .replace("__TR__",   minify_json(tr))
           .replace("__ENV__",  minify_json(env))
+          .replace("__BLANK__", blank)
     )
     (SITE / "app.built.js").write_text(js, encoding="utf-8")
 
