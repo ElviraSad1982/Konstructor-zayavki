@@ -131,17 +131,22 @@ function renderBrowse(){
     if(!S.sub||!subs.some(function(s){return s.id===S.sub}))S.sub=subs[0].id;
   }else S.sub='';
   var st=stems(S.sq);
-  var list=modeFilter(m.id,S.sub).filter(function(a){return matches(a.hay,st)});
+  /* При непустом поиске идём по всей плитке, а не по активной категории:
+     иначе «микроклимат» не находится из «Пищевой продукции», хотя лежит
+     в этой же плитке — просто в другой категории. */
+  var searching=!!String(S.sq||'').trim();
+  var list=modeFilter(m.id,searching?'':S.sub).filter(function(a){return matches(a.hay,st)});
   // sub chips
   var html='<div class="legend" style="margin:2px 0 7px;color:var(--accent);font-weight:700;font-size:13.5px">Объект испытаний — нажмите нужную категорию:</div>';
   html+='<div class="chips" style="margin-bottom:10px">';
-  subs.forEach(function(s){html+='<button class="chip" data-act="sub" data-s="'+esc(s.id)+'" aria-pressed="'+(S.sub===s.id)+'">'+esc(s.t)+'</button>'});
+  subs.forEach(function(s){html+='<button class="chip" data-act="sub" data-s="'+esc(s.id)+'" aria-pressed="'+(!searching&&S.sub===s.id)+'">'+esc(s.t)+'</button>'});
   html+='</div>';
   var curSub=subs.filter(function(s){return s.id===S.sub})[0];
-  if(curSub&&curSub.hint)html+='<div class="info">'+esc(curSub.hint)+'</div>';
+  if(searching)html+='<div class="info">Поиск идёт по всем категориям этой плитки — категория каждого набора указана в списке. Очистите поиск, чтобы вернуться к выбранной категории.</div>';
+  else if(curSub&&curSub.hint)html+='<div class="info">'+esc(curSub.hint)+'</div>';
   html+='<div class="field" style="margin-bottom:12px"><label for="sq">Поиск по названию или показателю</label><input type="search" id="sq" value="'+esc(S.sq)+'" placeholder="Например: салат, молоко, БГКП, микроклимат" autocomplete="off"></div>';
   html+='<div class="work"><div><div class="help" style="color:var(--muted);font-size:12.5px;margin-bottom:6px">Найдено наборов: '+list.length+'</div><div class="list" id="lst">';
-  if(!list.length)html+='<div class="empty">В этой подкатегории ничего не найдено. Проверьте поиск или откройте «Не нашли?» для подбора по ТР ТС / своему НД.</div>';
+  if(!list.length)html+='<div class="empty">'+(searching?'По этому запросу в плитке ничего нет. Попробуйте другое слово или откройте «Не нашли продукт?» для подбора по ТР ТС / своему НД.':'В этой категории пока пусто. Выберите другую категорию или воспользуйтесь поиском.')+'</div>';
   list.slice(0,300).forEach(function(a){var sub=a.cat;html+='<button class="li" data-act="pick" data-id="'+a.id+'" aria-current="'+(S.sel===a.id)+'"><span class="t">'+esc(a.name)+'</span><span class="m">'+esc(sub)+' · показателей: '+a.items.length+'</span></button>'});
   html+='</div></div><div id="det"></div></div>';
   box.innerHTML=html;
@@ -648,7 +653,7 @@ document.addEventListener('click',function(e){
   if(act==='close-letter'){var lwc=document.getElementById('letterWrap');if(lwc){lwc.hidden=true;document.body.style.overflow=''}return}
   if(act==='goto'){setTab(t.getAttribute('data-to'))}
   else if(act==='mode'){S.mode=t.getAttribute('data-m');S.sub='';S.sel=null;S.sq='';renderBrowse()}
-  else if(act==='sub'){S.sub=t.getAttribute('data-s');S.sel=null;renderBrowse()}
+  else if(act==='sub'){S.sq='';S.sub=t.getAttribute('data-s');S.sel=null;renderBrowse()}
   else if(act==='pick'){S.sel=+t.getAttribute('data-id');S.checks=null;$$('#lst .li').forEach(function(b){b.setAttribute('aria-current',String(b===t))});renderDetail();if(window.innerWidth<=860){var d=$('#det');if(d)d.scrollIntoView({block:'start'})}}
   else if(act==='add'){var a=ALL[+t.getAttribute('data-id')];addItem(a,S.checks.on,{qty:S.checks.qty,note:S.checks.note});S.checks=null;toast('Добавлено в заявку');renderDetail();updateBar()}
   else if(act==='tradd'){trAdd()}
