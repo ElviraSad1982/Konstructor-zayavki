@@ -256,7 +256,9 @@ function addItem(a,on,extras){
   /* Один и тот же набор можно добавлять несколько раз: заказчику нужны
      отдельные строки под разное количество и разные точки отбора
      (например 5 смывов на БГКП и 3 на стафилококк). */
-  var inds=[];a.items.forEach(function(it,i){if(on[i])inds.push({ind:it.ind,meth:it.meth,norm:it.norm,on:true})});
+  /* В карточку кладём весь набор, а не только отмеченное на шаге 2:
+     иначе забытый показатель нельзя добавить, не собирая набор заново. */
+  var inds=a.items.map(function(it,i){return {ind:it.ind,meth:it.meth,norm:it.norm,on:!!on[i]}});
   var k=catKind(a);
   extras=extras||{};
   var it={uid:S.uid++,kind:k,name:a.name,qty:extras.qty||'',di:'',note:extras.note||'',vid:a.vid,nd:a.nd,samp:a.samp,form:a.form,inds:inds,hint:noteExample(k),qhint:qtyExample(k)};
@@ -370,7 +372,11 @@ function renderFinal(){
     h+='<div class="field full"><label for="nd'+b.uid+'">НД, устанавливающий допустимый уровень</label><input type="text" id="nd'+b.uid+'" data-b="nd" data-u="'+b.uid+'" value="'+esc(b.nd)+'"><span class="help">Если проверка на соответствие собственным ТУ или СТО — замените этот текст на ваш НД (например: ТУ 10.11.30-001-12345678-2024).</span></div></div>';
     h+='<div class="tw"><table><tr><th></th><th>Показатель</th><th>Кол-во</th><th>Норматив</th><th>Метод</th></tr>';
     b.inds.forEach(function(x,j){h+='<tr><td><input type="checkbox" data-act="bchk" data-u="'+b.uid+'" data-j="'+j+'" id="k'+b.uid+'_'+j+'" aria-label="включить"'+(x.on?' checked':'')+'></td><td><label for="k'+b.uid+'_'+j+'">'+esc(x.ind)+'</label></td><td><input type="text" class="iq" data-iq="1" data-u="'+b.uid+'" data-j="'+j+'" value="'+esc(x.qty||'')+'" placeholder="'+esc(b.qty||'общее')+'" aria-label="количество для показателя"></td><td>'+esc(x.norm||'')+'</td><td class="mono">'+esc(applyMethPolicy(x.ind,x.meth))+'</td></tr>'});
-    h+='</table></div><div class="help" style="color:var(--muted);font-size:12.5px;margin:4px 0 0">Колонку «Кол-во» заполняйте, только если количество отличается от общего: такие показатели уйдут в заявку отдельной строкой.</div>';
+    h+='</table></div>';
+    if(!b.inds.some(function(x){return x.on})){
+      h+='<div class="note" style="margin:8px 0 0">Не отмечен ни один показатель — эта строка в заявку не попадёт.</div>';
+    }
+    h+='<div class="help" style="color:var(--muted);font-size:12.5px;margin:4px 0 0">Отметьте нужные показатели. Колонку «Кол-во» заполняйте, только если количество отличается от общего: такие показатели уйдут в заявку отдельной строкой.</div>';
     h+='<div class="chips"><span class="chip">отбор: '+esc(b.samp)+'</span></div>';
     h+='</div>';
   });
