@@ -786,6 +786,29 @@ var TPL_KEYS = ['n', 'obj', 'qty', 'vid', 'ind', 'meth', 'samp', 'nd', 'note'];
 var TPL_PURP = ['Производственный контроль', 'Входной контроль', 'Декларирование'];
 var TPL_AGREE = ['oa', 'meth', 'color', 'samples', 'pay', 'terms', 'return', 'pdn'];
 
+/* В бланке есть рабочие пометки: жёлтая заливка, затенение и примечание
+   Word. В заявке заказчику они не нужны, поэтому снимаются при сборке —
+   сам файл бланка в data/ остаётся как есть. */
+function stripMarks(doc){
+  var i,es;
+  es=xAll(doc,'w:highlight');
+  for(i=es.length-1;i>=0;i--)es[i].parentNode.removeChild(es[i]);
+  es=xAll(doc,'w:shd');
+  for(i=es.length-1;i>=0;i--){
+    var f=(es[i].getAttribute('w:fill')||'').toLowerCase();
+    if(f&&f!=='auto'&&f!=='ffffff')es[i].parentNode.removeChild(es[i]);
+  }
+  ['w:commentRangeStart','w:commentRangeEnd'].forEach(function(tag){
+    var cs=xAll(doc,tag);
+    for(var k=cs.length-1;k>=0;k--)cs[k].parentNode.removeChild(cs[k]);
+  });
+  es=xAll(doc,'w:commentReference');
+  for(i=es.length-1;i>=0;i--){
+    var run=es[i].parentNode;               /* w:r вокруг ссылки на примечание */
+    if(run&&run.parentNode)run.parentNode.removeChild(run);
+  }
+}
+
 function fillBlank(xml, d) {
   var doc = new DOMParser().parseFromString(xml, 'application/xml');
   var tb = xAll(doc, 'w:tbl');
@@ -847,6 +870,7 @@ function fillBlank(xml, d) {
   xBox(T4, 9, d.consent !== 'yes');
 
   /* V. Анализ заявки не трогаем: его флажки заполняет лаборатория */
+  stripMarks(doc);
   return new XMLSerializer().serializeToString(doc);
 }
 
@@ -873,6 +897,7 @@ function saveDocx(){
   JSZip.loadAsync(b64ToU8(BLANK_B64)).then(function(zip){
     return zip.file('word/document.xml').async('string').then(function(xml){
       zip.file('word/document.xml',fillBlank(xml,docxData()));
+      zip.file('word/comments.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:comments xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>');
       return zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
     });
   }).then(function(blob){
