@@ -441,7 +441,7 @@ function renderBrowse(){
   var curSub=subs.filter(function(s){return s.id===S.sub})[0];
   if(searching)html+='<div class="info">Поиск идёт по всем категориям этой плитки — категория каждого набора указана в списке. Очистите поиск, чтобы вернуться к выбранной категории.</div>';
   else if(curSub&&curSub.hint)html+='<div class="info">'+esc(curSub.hint)+'</div>';
-  html+='<div class="field" style="margin-bottom:12px"><label for="sq">Поиск по названию или показателю</label><input type="search" id="sq" value="'+esc(S.sq)+'" placeholder="Например: салат, молоко, БГКП, микроклимат" autocomplete="off"></div>';
+  html+='<div class="field" style="margin-bottom:12px"><label for="sq">Поиск по названию или показателю</label><input type="search" id="sq" value="'+esc(S.sq)+'" placeholder="Например: салат, молоко, микроклимат" autocomplete="off"></div>';
   html+='<div class="work"><div><div class="help" style="color:var(--muted);font-size:12.5px;margin-bottom:6px">Найдено наборов: '+list.length+'</div><div class="list" id="lst">';
   if(!list.length)html+='<div class="empty">'+(searching?'По этому запросу в плитке ничего нет. Попробуйте другое слово или откройте «Не нашли продукт?» для подбора по ТР ТС / своему НД.':'В этой категории пока пусто. Выберите другую категорию или воспользуйтесь поиском.')+'</div>';
   list.slice(0,300).forEach(function(a){var sub=a.cat;html+='<button class="li" data-act="pick" data-id="'+a.id+'" aria-current="'+(S.sel===a.id)+'"><span class="t">'+esc(a.name)+'</span><span class="m">'+esc(sub)+' · показателей: '+a.items.length+'</span></button>'});
