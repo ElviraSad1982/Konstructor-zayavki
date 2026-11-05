@@ -99,7 +99,11 @@ function renderChoices(){
     $('#'+id).innerHTML=h;
   });
 }
-function fillInputs(){$$('[data-c]').forEach(function(i){i.value=S.c[i.getAttribute('data-c')]||''});renderChoices();$$('[data-ag]').forEach(function(i){i.checked=S.c.agree[i.getAttribute('data-ag')]!==false});$('#exbanner').hidden=!S.example}
+/* Пустой заказчик одним местом: «Очистить пример» раньше собирал объект
+   вручную и терял agree/discardMode/consent, из-за чего сборка Word
+   падала на разделе согласования. */
+function emptyCustomer(){return {org:'',inn:'',legal:'',actual:'',contact:'',cno:'',cdate:'',place:'',placeContact:'',purpose:'Производственный контроль',sampler:'lab',methods:'lab',unc:'Нет',concl:'Нет',agree:{oa:true,meth:true,color:true,samples:true,pay:true,terms:true,return:true,pdn:true},discardMode:'without',consent:'yes'}}
+function fillInputs(){$$('[data-c]').forEach(function(i){i.value=S.c[i.getAttribute('data-c')]||''});renderChoices();$$('[data-ag]').forEach(function(i){i.checked=(S.c.agree||{})[i.getAttribute('data-ag')]!==false});$('#exbanner').hidden=!S.example}
 
 /* tabs */
 function setTab(t,noHash){
@@ -173,7 +177,7 @@ function renderDetail(){
     var decl=p==='Декларирование';
     h+='<div class="note"><b>Методика для Salmonella и Listeria зависит от цели испытаний</b> (шаг 1): сейчас выбрано «'+esc(p)+'» → '+(decl?'ГОСТ 31659-2012 и ГОСТ 32031-2012 (для декларирования)':'ГОСТ 31659-2024 и ГОСТ 32031-2022 (для ППК и прочих целей)')+'. Основание — информационное письмо ИЛ ООО «ВИКИНГ» № 19/02-03/2026 от 19.02.2026.</div>';
   }
-  if(a.note&&(catKind(a)==='dez'||catKind(a)==='air'))h+='<div class="note">'+esc(a.note)+'</div>';
+  if(a.note&&(catKind(a)==='dez'||catKind(a)==='air'||catKind(a)==='bio'))h+='<div class="note">'+esc(a.note)+'</div>';
   var qlab=catKind(a)==='phys'?'Количество измерений':'Количество образцов';
   h+='<div class="grid2" style="margin-top:12px"><div class="field"><label for="dqty">'+qlab+'</label><input type="text" id="dqty" data-dq="qty" value="'+esc(S.checks.qty)+'" placeholder="'+esc(S.checks.qhint)+'"></div><div class="field"><label for="dnote">Примечание</label><input type="text" id="dnote" data-dq="note" value="'+esc(S.checks.note)+'" placeholder="'+esc(S.checks.nhint||'')+'"></div></div>';
   /* У смывов и воздуха показатели не отмечены заранее, поэтому пустое
@@ -258,7 +262,7 @@ function trAdd(){
 /* basket */
 function catKind(a){var c=a.cat||'';if(c==='Смывы')return 'smyv';if(c==='Вода')return 'water';if(c==='Воздух')return /холодильн|морозильн/i.test(a.name||'')?'cold':'air';if(c==='Медицина')return 'med';if(c==='Холодильные камеры')return 'cold';if(c==='Физические факторы')return 'phys';if(c==='Дезинфекция')return 'dez';if(c==='Биотесты')return 'bio';if(c==='Стерильность')return 'ster';return 'food'}
 function qtyExample(k){var m={food:'Например: 2',smyv:'Например: 10',water:'Например: 2',air:'Например: 5',med:'Например: 5',cold:'Например: 1',phys:'Например: 5',dez:'',bio:'Например: 1',ster:'Например: 5'};return k in m?m[k]:'Например: 1'}
-function noteExample(k){var m={food:'',smyv:'Точка отбора: цех, посуда, инвентарь, руки персонала',water:'',air:'Точка отбора воздуха: кабинет №, помещение',med:'Что отбирается: инструмент, эндоскоп; способ стерилизации',cold:'Номер камеры, что хранится, температура',phys:'РМ или помещение, адрес, число точек',dez:'Концентрация рабочего раствора; приложить инструкцию к дезсредству',bio:'Укажите марку и объём камеры — от этого зависит, сколько биотестов возьмёт специалист',ster:'Что отбирается (ИМН, инструмент), способ стерилизации'};return k in m?m[k]:'Пояснения к образцу'}
+function noteExample(k){var m={food:'',smyv:'Точка отбора: цех, инвентарь, руки',water:'',air:'Точка отбора: кабинет №, помещение',med:'Что отбирается, способ стерилизации',cold:'Номер камеры, что хранится, температура',phys:'РМ или помещение, адрес, число точек',dez:'Концентрация рабочего раствора',bio:'Марка и объём камеры',ster:'Что отбирается, способ стерилизации'};return k in m?m[k]:'Пояснения к образцу'}
 function addItem(a,on,extras){
   /* Один и тот же набор можно добавлять несколько раз: заказчику нужны
      отдельные строки под разное количество и разные точки отбора
@@ -611,7 +615,7 @@ function docxData(){
   var c=S.c;
   return {org:c.org,inn:c.inn,legal:c.legal,actual:c.actual,contact:c.contact,
     cno:c.cno,cdate:c.cdate,purpose:c.purpose,sampler:c.sampler,methods:c.methods,
-    unc:c.unc,place:c.place,placeContact:c.placeContact,agree:c.agree,
+    unc:c.unc,place:c.place,placeContact:c.placeContact,agree:c.agree||{},
     consent:c.consent,rows:allRows()};
 }
 
@@ -667,7 +671,7 @@ document.addEventListener('click',function(e){
   else if(act==='del'){var u=+t.getAttribute('data-u');S.basket=S.basket.filter(function(b){return b.uid!==u});renderFinal();updateBar()}
   else if(act==='same-addr'){S.c.actual=S.c.legal;fillInputs()}
   else if(act==='place-actual'){S.c.place=S.c.actual;fillInputs()}
-  else if(act==='clear-example'){S.c={org:'',inn:'',legal:'',actual:'',contact:'',cno:'',cdate:'',place:'',placeContact:'',purpose:'Производственный контроль',sampler:'lab',methods:'lab',unc:'Нет',concl:'Нет'};S.basket=[];S.example=false;fillInputs();updateBar()}
+  else if(act==='clear-example'){S.c=emptyCustomer();S.basket=[];S.example=false;fillInputs();updateBar()}
 });
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){var lw=document.getElementById('letterWrap');if(lw&&!lw.hidden){lw.hidden=true;document.body.style.overflow=''}}});
 document.addEventListener('input',function(e){
