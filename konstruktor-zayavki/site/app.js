@@ -10,7 +10,7 @@ var ALL=[];
 // FOOD: has obj field (list of mode ids where this food appears)
 FOOD.forEach(function(f){ALL.push({kind:'food',cat:f.cat,obj:f.obj||['prod','horeca'],name:f.name,nd:f.nd||'Выдать фактический результат без указания норматива',decl:!!f.decl,vid:f.vid||'Микробиология',samp:f.samp||'ГОСТ 31904-2012',form:f.form||'Пищевая продукция',note:f.note||'',items:f.items.map(function(i){return {ind:i.ind,meth:i.meth||'Выбирает ИЛ',norm:i.norm,on:i.on!==false}})})});
 // ENV: has obj field
-ENV.forEach(function(e){ALL.push({kind:'env',cat:e.cat,obj:e.obj||[],name:e.name,nd:e.nd,decl:false,vid:e.vid,samp:e.samp,form:e.form,note:e.note||'',items:e.items.map(function(i){return {ind:i.ind,meth:i.meth,norm:i.norm,vid:i.vid,on:i.on!==false}})})});
+ENV.forEach(function(e){ALL.push({kind:'env',cat:e.cat,obj:e.obj||[],name:e.name,nd:e.nd,decl:false,vid:e.vid,samp:e.samp,form:e.form,note:e.note||'',nhint:e.nhint,items:e.items.map(function(i){return {ind:i.ind,meth:i.meth,norm:i.norm,vid:i.vid,on:i.on!==false}})})});
 // FX: физико-химия и органолептика из области аккредитации (карточки по категориям продукции)
 FX.forEach(function(e){ALL.push({kind:'fx',cat:e.cat,obj:e.obj||['food'],name:e.name,nd:e.nd,decl:false,vid:e.vid,samp:e.samp,form:e.form,note:e.note||'',items:e.items.map(function(i){return {ind:i.ind,meth:i.meth||'Выбирает ИЛ',norm:i.norm,rang:i.rang||'',on:false}})})});
 ALL.forEach(function(a,i){a.id=i;a.hay=norm(a.name+' '+a.nd+' '+a.cat+' '+a.items.map(function(x){return x.ind}).join(' '))});
@@ -161,7 +161,7 @@ function renderDetail(){
   var det=$('#det');if(!det)return;
   if(S.sel===null){det.innerHTML='<div class="card empty">Выберите строку слева. Здесь появятся показатели, методы и нормативы.</div>';return}
   var a=ALL[S.sel];
-  if(!S.checks||S.checks.id!==a.id){var kk=catKind(a);S.checks={id:a.id,on:a.items.map(function(i){return i.on}),qty:'',note:'',qhint:qtyExample(kk),nhint:noteExample(kk)}}
+  if(!S.checks||S.checks.id!==a.id){var kk=catKind(a);S.checks={id:a.id,on:a.items.map(function(i){return i.on}),qty:'',note:'',qhint:qtyExample(kk),nhint:noteHint(a,kk)}}
   var n=S.checks.on.filter(Boolean).length;
   var h='<div class="card"><h3>'+esc(a.name)+'</h3><div class="chips"><span class="chip">НД: '+esc(a.nd)+'</span>';
   h+='</div><div class="tw"><table><tr><th></th><th>Показатель</th><th>Норматив</th><th>Метод</th></tr>';
@@ -262,6 +262,9 @@ function trAdd(){
 /* basket */
 function catKind(a){var c=a.cat||'';if(c==='Смывы')return 'smyv';if(c==='Вода')return 'water';if(c==='Воздух')return /холодильн|морозильн/i.test(a.name||'')?'cold':'air';if(c==='Медицина')return 'med';if(c==='Холодильные камеры')return 'cold';if(c==='Физические факторы')return 'phys';if(c==='Дезинфекция')return 'dez';if(c==='Биотесты')return 'bio';if(c==='Стерильность')return 'ster';return 'food'}
 function qtyExample(k){var m={food:'Например: 2',smyv:'Например: 10',water:'Например: 2',air:'Например: 5',med:'Например: 5',cold:'Например: 1',phys:'Например: 5',dez:'',bio:'Например: 1',ster:'Например: 5'};return k in m?m[k]:'Например: 1'}
+/* Подсказка примечания берётся по виду испытаний, но набор может задать
+   свою — в том числе пустую, чтобы убрать подсказку только у него. */
+function noteHint(a,k){return a&&a.nhint!==undefined&&a.nhint!==null?a.nhint:noteExample(k)}
 function noteExample(k){var m={food:'',smyv:'Точка отбора: цех, инвентарь, руки',water:'',air:'Точка отбора: кабинет №, помещение',med:'Что отбирается, способ стерилизации',cold:'Номер камеры, что хранится, температура',phys:'РМ или помещение, адрес, число точек',dez:'Концентрация рабочего раствора',bio:'Марка и объём камеры',ster:'Что отбирается, способ стерилизации'};return k in m?m[k]:'Пояснения к образцу'}
 function addItem(a,on,extras){
   /* Один и тот же набор можно добавлять несколько раз: заказчику нужны
@@ -272,7 +275,7 @@ function addItem(a,on,extras){
   var inds=a.items.map(function(it,i){return {ind:it.ind,meth:it.meth,norm:it.norm,vid:it.vid,on:!!on[i]}});
   var k=catKind(a);
   extras=extras||{};
-  var it={uid:S.uid++,kind:k,name:a.name,qty:extras.qty||'',di:'',note:extras.note||'',vid:a.vid,ndSrc:a.nd,nd:ndFor(a.nd,vidsOf(inds.filter(function(x){return x.on}))),samp:a.samp,form:a.form,inds:inds,hint:noteExample(k),qhint:qtyExample(k)};
+  var it={uid:S.uid++,kind:k,name:a.name,qty:extras.qty||'',di:'',note:extras.note||'',vid:a.vid,ndSrc:a.nd,nd:ndFor(a.nd,vidsOf(inds.filter(function(x){return x.on}))),samp:a.samp,form:a.form,inds:inds,hint:noteHint(a,k),qhint:qtyExample(k)};
   S.basket.push(it); return it;
 }
 function totals(){var rows=allRows().length,ind=0;S.basket.forEach(function(b){b.inds.forEach(function(x){if(x.on)ind++})});return {rows:rows,ind:ind}}
@@ -384,7 +387,7 @@ function renderFinal(){
   /* items editor */
   h+='<h3>Строки заявки</h3><div class="items">';
   S.basket.forEach(function(b,i){
-    var qh=b.qhint||qtyExample(b.kind), nh=b.hint||noteExample(b.kind);
+    var qh=b.qhint||qtyExample(b.kind), nh=b.hint!==undefined&&b.hint!==null?b.hint:noteExample(b.kind);
     h+='<div class="item"><div class="row spread"><b>'+(i+1)+'. '+esc(b.name)+'</b><button class="btn sm ghost" data-act="del" data-u="'+b.uid+'">Удалить из заявки</button></div>';
     h+='<div class="grid2"><div class="field"><label for="n'+b.uid+'">Название по этикетке или ТУ</label><input type="text" id="n'+b.uid+'" data-b="name" data-u="'+b.uid+'" value="'+esc(b.name)+'"></div>';
     h+='<div class="field"><label for="q'+b.uid+'">'+(b.kind==='phys'?'Количество измерений':'Количество образцов')+'</label><input type="text" id="q'+b.uid+'" data-b="qty" data-u="'+b.uid+'" value="'+esc(b.qty)+'" placeholder="'+esc(qh)+'"></div>';
