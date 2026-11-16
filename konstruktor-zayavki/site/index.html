@@ -476,7 +476,7 @@ function renderDetail(){
   h+='<div class="grid2" style="margin-top:12px"><div class="field"><label for="dqty">'+qlab+'</label><input type="text" id="dqty" data-dq="qty" value="'+esc(S.checks.qty)+'" placeholder="'+esc(S.checks.qhint)+'"></div><div class="field"><label for="dnote">Примечание</label><input type="text" id="dnote" data-dq="note" value="'+esc(S.checks.note)+'" placeholder="'+esc(S.checks.nhint||'')+'"></div></div>';
   /* У смывов и воздуха показатели не отмечены заранее, поэтому пустое
      добавление — лёгкая ошибка: блокируем кнопку, пока ничего не выбрано. */
-  h+='<div class="row" style="margin-top:12px"><button class="btn pri" data-act="add" data-id="'+a.id+'"'+(n?'':' disabled')+'>Добавить в заявку ('+n+' показ.)</button><span style="color:var(--muted);font-size:13px">'+(n?'Метод отбора: '+esc(a.samp):'Отметьте нужные показатели')+'</span></div></div>';
+  h+='<div class="row" style="margin-top:12px"><button class="btn pri" data-act="add" data-id="'+a.id+'"'+(n?'':' disabled')+'>Добавить в заявку ('+n+' показ.)</button><span style="color:var(--muted);font-size:13px">'+(n?'Метод отбора: '+esc(a.samp):(S.basket.length?'Отметьте следующий показатель':'Отметьте нужные показатели'))+'</span></div></div>';
   det.innerHTML=h;
 }
 
@@ -1004,7 +1004,7 @@ document.addEventListener('click',function(e){
   else if(act==='mode'){S.mode=t.getAttribute('data-m');S.sub='';S.sel=null;S.sq='';renderBrowse()}
   else if(act==='sub'){S.sq='';S.sub=t.getAttribute('data-s');S.sel=null;renderBrowse()}
   else if(act==='pick'){S.sel=+t.getAttribute('data-id');S.checks=null;$$('#lst .li').forEach(function(b){b.setAttribute('aria-current',String(b===t))});renderDetail();if(window.innerWidth<=860){var d=$('#det');if(d)d.scrollIntoView({block:'start'})}}
-  else if(act==='add'){var a=ALL[+t.getAttribute('data-id')];addItem(a,S.checks.on,{qty:S.checks.qty,note:S.checks.note});S.checks=null;toast('Добавлено в заявку');renderDetail();updateBar()}
+  else if(act==='add'){var a=ALL[+t.getAttribute('data-id')];addItem(a,S.checks.on,{qty:S.checks.qty,note:S.checks.note});S.checks=null;toast('Добавлено. Отметьте следующий показатель — он уйдёт отдельной строкой');renderDetail();updateBar()}
   else if(act==='tradd'){trAdd()}
   else if(act==='spadd'){
     var g=SAFE_SETS.filter(function(x){return x.k===t.getAttribute('data-g')})[0];
