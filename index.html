@@ -516,6 +516,15 @@ function trFiltered(){
 }
 /* Форма свободного ввода: «свой документ (ТУ/СТО)» в плитке подбора и
    «субподрядные испытания» в плитке HoReCa — разметка одна. */
+/* Показатели безопасности по Приложению 3 ТР ТС 021. В заявку уходят одни
+   названия: нормативы и методы определяет субподрядная лаборатория, в ОА
+   ИЛ ООО «ВИКИНГ» этих показателей нет. */
+var SAFE_SETS=[
+ {k:'tox', t:'Токсичные элементы', inds:['Свинец','Мышьяк','Кадмий','Ртуть']},
+ {k:'pest',t:'Пестициды',          inds:['ГХЦГ (α, β, γ-изомеры)','ДДТ и его метаболиты']},
+ {k:'rad', t:'Радионуклиды',       inds:['Цезий-137','Стронций-90']},
+ {k:'myco',t:'Микотоксины',        inds:['Афлатоксин B1','Дезоксиниваленол','Т-2 токсин','Зеараленон']}
+];
 function renderFree(sp){
   var h='';
   var c=S.cust;
@@ -525,6 +534,11 @@ function renderFree(sp){
   h+='<div class="field full"><label for="cind">Перечень определяемых показателей</label><textarea id="cind" data-cu="inds" placeholder="'+(sp?'':'Один показатель на строку. Например:&#10;Массовая доля белка&#10;Массовая доля жира&#10;Массовая доля углеводов')+'" rows="6">'+esc(c.inds)+'</textarea><span class="help">Один показатель на строку. Методику ИЛ подберёт под каждый показатель и согласует с вами в заявке.</span></div>';
   h+='<div class="field"><label for="cq">Количество образцов</label><input type="text" id="cq" data-cu="qty" value="'+esc(c.qty)+'" placeholder="'+(sp?'':'Количество образцов')+'"></div>';
   h+='<div class="field"><label for="cm">Примечание</label><input type="text" id="cm" data-cu="note" value="'+esc(c.note)+'" placeholder="'+(sp?'':'Партия, срок годности, точка отбора')+'"></div></div>';
+  if(sp){
+    h+='<div class="field full" style="margin-top:10px"><span class="legend">Готовые наборы показателей</span>';
+    h+='<div class="row">'+SAFE_SETS.map(function(g){return '<button class="btn sm" data-act="spadd" data-g="'+g.k+'">'+esc(g.t)+'</button>'}).join('')+'</div>';
+    h+='<span class="help">Нажмите — показатели добавятся в список выше. Лишнее удалите вручную.</span></div>';
+  }
   var ok=c.name.trim()&&c.inds.trim();
   h+='<div class="row" style="margin-top:12px"><button class="btn pri" data-act="cuadd"'+(ok?'':' disabled')+'>Добавить в заявку</button><span style="color:var(--muted);font-size:13px">НД отбора: ГОСТ 31904-2012 (микробиология) / ГОСТ Р 54607.1-2011 (органолептика), подбирает ИЛ</span></div>';
   return h;
@@ -999,6 +1013,14 @@ document.addEventListener('click',function(e){
   else if(act==='pick'){S.sel=+t.getAttribute('data-id');S.checks=null;$$('#lst .li').forEach(function(b){b.setAttribute('aria-current',String(b===t))});renderDetail();if(window.innerWidth<=860){var d=$('#det');if(d)d.scrollIntoView({block:'start'})}}
   else if(act==='add'){var a=ALL[+t.getAttribute('data-id')];addItem(a,S.checks.on,{qty:S.checks.qty,note:S.checks.note});S.checks=null;toast('Добавлено в заявку');renderDetail();updateBar()}
   else if(act==='tradd'){trAdd()}
+  else if(act==='spadd'){
+    var g=SAFE_SETS.filter(function(x){return x.k===t.getAttribute('data-g')})[0];
+    if(!g)return;
+    var cur=String(S.cust.inds||'').split(/\n/).map(function(x){return x.trim()}).filter(Boolean);
+    g.inds.forEach(function(x){if(cur.indexOf(x)<0)cur.push(x)});
+    S.cust.inds=cur.join('\n');
+    renderBrowse();
+  }
   else if(act==='cuadd'){var c=S.cust;if(!c.name.trim()||!c.inds.trim())return;var sp=S.sub==='subpod';/* У субподряда метод и норматив заполняет субподрядная лаборатория, поэтому графы уходят пустыми, а строка помечается в примечаниях. */var inds=c.inds.split(/\n/).map(function(x){return x.trim()}).filter(Boolean).map(function(x){return {ind:x,meth:sp?'':'Выбирает ИЛ',norm:sp?'':'Выдать фактический результат / согласовать с ИЛ','on':true}});S.basket.push({uid:S.uid++,kind:'food',name:c.name.trim(),qty:c.qty||'',di:'',note:sp?('Субподрядные испытания'+(c.note?'; '+c.note:'')):(c.note||''),vid:sp?'':'Выбирает ИЛ',nd:sp?(c.nd||''):(c.nd||'Выдать фактический результат без указания норматива'),samp:sp?'':'Выбирает ИЛ',form:'Пищевая продукция',inds:inds,hint:noteExample('food'),qhint:qtyExample('food')});S.cust={name:'',nd:'',qty:'',note:'',inds:''};toast('Добавлено в заявку');renderBrowse();updateBar();return}
   else if(act==='showall'){var bs=S.basket.filter(function(x){return x.uid===+t.getAttribute('data-u')})[0];if(bs){bs.showAll=!bs.showAll;renderFinal()}}
   else if(act==='del'){var u=+t.getAttribute('data-u');S.basket=S.basket.filter(function(b){return b.uid!==u});renderFinal();updateBar()}
