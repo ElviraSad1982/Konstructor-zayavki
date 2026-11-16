@@ -336,6 +336,7 @@ var SUBS={
   {id:'Воздух',t:'Воздух',hint:'Воздух холодильных камер и цехов'},
   {id:'Физические факторы',t:'Физические факторы',hint:'Микроклимат, освещённость, шум, вибрация, ЭМП, температура воды'},
   {id:'Дезинфекция',t:'Дезсредства',hint:'Контроль концентрации рабочего раствора'},
+  {id:'subpod',t:'Субподрядные испытания',hint:''},
  ],
  med:[
   {id:'Воздух',t:'Воздух помещений',hint:'С классом чистоты А/Б и без класса'},
@@ -447,6 +448,7 @@ function renderBrowse(){
   var curSub=subs.filter(function(s){return s.id===S.sub})[0];
   if(searching)html+='<div class="info">Поиск идёт по всем категориям этой плитки — категория каждого набора указана в списке. Очистите поиск, чтобы вернуться к выбранной категории.</div>';
   else if(curSub&&curSub.hint)html+='<div class="info">'+esc(curSub.hint)+'</div>';
+  if(S.sub==='subpod'){box.innerHTML=html+renderFree(true);return}
   html+='<div class="field" style="margin-bottom:12px"><label for="sq">Поиск по названию или показателю</label><input type="search" id="sq" value="'+esc(S.sq)+'" placeholder="Например: салат, молоко, микроклимат" autocomplete="off"></div>';
   html+='<div class="work"><div><div class="help" style="color:var(--muted);font-size:12.5px;margin-bottom:6px">Найдено наборов: '+list.length+'</div><div class="list" id="lst">';
   if(!list.length)html+='<div class="empty">'+(searching?'По этому запросу в плитке ничего нет. Попробуйте другое слово или откройте «Не нашли продукт?» для подбора по ТР ТС / своему НД.':'В этой категории пока пусто. Выберите другую категорию или воспользуйтесь поиском.')+'</div>';
@@ -512,22 +514,25 @@ function trFiltered(){
     out.push(i)}
   return {idx:out,st:st};
 }
+/* Форма свободного ввода: «свой документ (ТУ/СТО)» в плитке подбора и
+   «субподрядные испытания» в плитке HoReCa — разметка одна. */
+function renderFree(sp){
+  var h='';
+  var c=S.cust;
+  h+='<div class="info">'+(sp?'Испытания, которые ИЛ ООО «ВИКИНГ» передаёт субподрядной лаборатории. Впишите объект и показатели — графы «Метод» и «НД» остаются пустыми, их заполнит субподрядчик. В заявке строка будет помечена как субподряд.':'Если проверяете продукцию на соответствие собственному ТУ или СТО (или другому вашему НД), заполните поля ниже. Методики испытаний подбирает ИЛ после получения заявки.')+'</div>';
+  h+='<div class="grid2"><div class="field full"><label for="cn">'+(sp?'Объект испытаний (измерений)':'Наименование продукции (как в маркировке/спецификации)')+'</label><input type="text" id="cn" data-cu="name" value="'+esc(c.name)+'" placeholder="'+(sp?'':'Например: Соус томатный «Пример», ТМ «Моя Марка»')+'"></div>';
+  h+='<div class="field full"><label for="cnd">'+(sp?'НД, устанавливающий допустимый уровень (можно оставить пустым)':'НД, на соответствие которому проводятся испытания')+'</label><input type="text" id="cnd" data-cu="nd" value="'+esc(c.nd)+'" placeholder="'+(sp?'':'Например: ТУ 10.11.30-001-12345678-2024')+'"><span class="help">ТУ, СТО, ГОСТ, ТР ТС и т. п. Если документа нет — напишите «Выдать фактический результат без указания норматива».</span></div>';
+  h+='<div class="field full"><label for="cind">Перечень определяемых показателей</label><textarea id="cind" data-cu="inds" placeholder="'+(sp?'':'Один показатель на строку. Например:&#10;Массовая доля белка&#10;Массовая доля жира&#10;Массовая доля углеводов')+'" rows="6">'+esc(c.inds)+'</textarea><span class="help">Один показатель на строку. Методику ИЛ подберёт под каждый показатель и согласует с вами в заявке.</span></div>';
+  h+='<div class="field"><label for="cq">Количество образцов</label><input type="text" id="cq" data-cu="qty" value="'+esc(c.qty)+'" placeholder="'+(sp?'':'Количество образцов')+'"></div>';
+  h+='<div class="field"><label for="cm">Примечание</label><input type="text" id="cm" data-cu="note" value="'+esc(c.note)+'" placeholder="'+(sp?'':'Партия, срок годности, точка отбора')+'"></div></div>';
+  var ok=c.name.trim()&&c.inds.trim();
+  h+='<div class="row" style="margin-top:12px"><button class="btn pri" data-act="cuadd"'+(ok?'':' disabled')+'>Добавить в заявку</button><span style="color:var(--muted);font-size:13px">НД отбора: ГОСТ 31904-2012 (микробиология) / ГОСТ Р 54607.1-2011 (органолептика), подбирает ИЛ</span></div>';
+  return h;
+}
+
 function renderTR(box){
-  var h='<div class="choices" style="margin-bottom:12px"><label class="choice"><input type="radio" name="trsub" value="tr21"'+(S.sub==='tr21'?' checked':'')+'><span>Подбор по ТР ТС 021</span></label><label class="choice"><input type="radio" name="trsub" value="custom"'+(S.sub==='custom'?' checked':'')+'><span>Свой документ (ТУ, СТО и т. п.)</span></label><label class="choice"><input type="radio" name="trsub" value="subpod"'+(S.sub==='subpod'?' checked':'')+'><span>Субподрядные испытания</span></label></div>';
-  if(S.sub==='custom'||S.sub==='subpod'){
-    var sp=S.sub==='subpod';
-    var c=S.cust;
-    h+='<div class="info">'+(sp?'Испытания, которые ИЛ ООО «ВИКИНГ» передаёт субподрядной лаборатории. Впишите объект и показатели — графы «Метод» и «НД» остаются пустыми, их заполнит субподрядчик. В заявке строка будет помечена как субподряд.':'Если проверяете продукцию на соответствие собственному ТУ или СТО (или другому вашему НД), заполните поля ниже. Методики испытаний подбирает ИЛ после получения заявки.')+'</div>';
-    h+='<div class="grid2"><div class="field full"><label for="cn">'+(sp?'Объект испытаний (измерений)':'Наименование продукции (как в маркировке/спецификации)')+'</label><input type="text" id="cn" data-cu="name" value="'+esc(c.name)+'" placeholder="'+(sp?'':'Например: Соус томатный «Пример», ТМ «Моя Марка»')+'"></div>';
-    h+='<div class="field full"><label for="cnd">'+(sp?'НД, устанавливающий допустимый уровень (можно оставить пустым)':'НД, на соответствие которому проводятся испытания')+'</label><input type="text" id="cnd" data-cu="nd" value="'+esc(c.nd)+'" placeholder="'+(sp?'':'Например: ТУ 10.11.30-001-12345678-2024')+'"><span class="help">ТУ, СТО, ГОСТ, ТР ТС и т. п. Если документа нет — напишите «Выдать фактический результат без указания норматива».</span></div>';
-    h+='<div class="field full"><label for="cind">Перечень определяемых показателей</label><textarea id="cind" data-cu="inds" placeholder="'+(sp?'':'Один показатель на строку. Например:&#10;Массовая доля белка&#10;Массовая доля жира&#10;Массовая доля углеводов')+'" rows="6">'+esc(c.inds)+'</textarea><span class="help">Один показатель на строку. Методику ИЛ подберёт под каждый показатель и согласует с вами в заявке.</span></div>';
-    h+='<div class="field"><label for="cq">Количество образцов</label><input type="text" id="cq" data-cu="qty" value="'+esc(c.qty)+'" placeholder="'+(sp?'':'Количество образцов')+'"></div>';
-    h+='<div class="field"><label for="cm">Примечание</label><input type="text" id="cm" data-cu="note" value="'+esc(c.note)+'" placeholder="'+(sp?'':'Партия, срок годности, точка отбора')+'"></div></div>';
-    var ok=c.name.trim()&&c.inds.trim();
-    h+='<div class="row" style="margin-top:12px"><button class="btn pri" data-act="cuadd"'+(ok?'':' disabled')+'>Добавить в заявку</button><span style="color:var(--muted);font-size:13px">НД отбора: ГОСТ 31904-2012 (микробиология) / ГОСТ Р 54607.1-2011 (органолептика), подбирает ИЛ</span></div>';
-    box.innerHTML=h;
-    return;
-  }
+  var h='<div class="choices" style="margin-bottom:12px"><label class="choice"><input type="radio" name="trsub" value="tr21"'+(S.sub==='tr21'?' checked':'')+'><span>Подбор по ТР ТС 021</span></label><label class="choice"><input type="radio" name="trsub" value="custom"'+(S.sub==='custom'?' checked':'')+'><span>Свой документ (ТУ, СТО и т. п.)</span></label></div>';
+  if(S.sub==='custom'){box.innerHTML=renderFree(false);return}
   var f=trFiltered();
   h+='<div class="info">Введите название продукта: покажем, в какую группу ТР ТС 021 он входит и в какой навеске нормируется каждый показатель. Отметьте нужные строки и добавьте их в заявку.</div>';
   h+='<div class="grid2" style="margin-bottom:12px"><div class="field full"><label for="trq">Название продукта</label><input type="search" id="trq" value="'+esc(S.trQ)+'" placeholder="Например: котлеты, пельмени, пирожное, сок, колбаса" autocomplete="off"></div>';
