@@ -214,12 +214,13 @@ function trFiltered(){
   return {idx:out,st:st};
 }
 function renderTR(box){
-  var h='<div class="choices" style="margin-bottom:12px"><label class="choice"><input type="radio" name="trsub" value="tr21"'+(S.sub==='tr21'?' checked':'')+'><span>Подбор по ТР ТС 021</span></label><label class="choice"><input type="radio" name="trsub" value="custom"'+(S.sub==='custom'?' checked':'')+'><span>Свой документ (ТУ, СТО и т. п.)</span></label></div>';
-  if(S.sub==='custom'){
+  var h='<div class="choices" style="margin-bottom:12px"><label class="choice"><input type="radio" name="trsub" value="tr21"'+(S.sub==='tr21'?' checked':'')+'><span>Подбор по ТР ТС 021</span></label><label class="choice"><input type="radio" name="trsub" value="custom"'+(S.sub==='custom'?' checked':'')+'><span>Свой документ (ТУ, СТО и т. п.)</span></label><label class="choice"><input type="radio" name="trsub" value="subpod"'+(S.sub==='subpod'?' checked':'')+'><span>Субподрядные испытания</span></label></div>';
+  if(S.sub==='custom'||S.sub==='subpod'){
+    var sp=S.sub==='subpod';
     var c=S.cust;
-    h+='<div class="info">Если проверяете продукцию на соответствие собственному ТУ или СТО (или другому вашему НД), заполните поля ниже. Методики испытаний подбирает ИЛ после получения заявки.</div>';
-    h+='<div class="grid2"><div class="field full"><label for="cn">Наименование продукции (как в маркировке/спецификации)</label><input type="text" id="cn" data-cu="name" value="'+esc(c.name)+'" placeholder="Например: Соус томатный «Пример», ТМ «Моя Марка»"></div>';
-    h+='<div class="field full"><label for="cnd">НД, на соответствие которому проводятся испытания</label><input type="text" id="cnd" data-cu="nd" value="'+esc(c.nd)+'" placeholder="Например: ТУ 10.11.30-001-12345678-2024"><span class="help">ТУ, СТО, ГОСТ, ТР ТС и т. п. Если документа нет — напишите «Выдать фактический результат без указания норматива».</span></div>';
+    h+='<div class="info">'+(sp?'Испытания, которые ИЛ ООО «ВИКИНГ» передаёт субподрядной лаборатории. Впишите объект и показатели — графы «Метод» и «НД» остаются пустыми, их заполнит субподрядчик. В заявке строка будет помечена как субподряд.':'Если проверяете продукцию на соответствие собственному ТУ или СТО (или другому вашему НД), заполните поля ниже. Методики испытаний подбирает ИЛ после получения заявки.')+'</div>';
+    h+='<div class="grid2"><div class="field full"><label for="cn">'+(sp?'Объект испытаний (измерений)':'Наименование продукции (как в маркировке/спецификации)')+'</label><input type="text" id="cn" data-cu="name" value="'+esc(c.name)+'" placeholder="Например: Соус томатный «Пример», ТМ «Моя Марка»"></div>';
+    h+='<div class="field full"><label for="cnd">'+(sp?'НД, устанавливающий допустимый уровень (можно оставить пустым)':'НД, на соответствие которому проводятся испытания')+'</label><input type="text" id="cnd" data-cu="nd" value="'+esc(c.nd)+'" placeholder="Например: ТУ 10.11.30-001-12345678-2024"><span class="help">ТУ, СТО, ГОСТ, ТР ТС и т. п. Если документа нет — напишите «Выдать фактический результат без указания норматива».</span></div>';
     h+='<div class="field full"><label for="cind">Перечень определяемых показателей</label><textarea id="cind" data-cu="inds" placeholder="Один показатель на строку. Например:&#10;Массовая доля белка&#10;Массовая доля жира&#10;Массовая доля углеводов" rows="6">'+esc(c.inds)+'</textarea><span class="help">Один показатель на строку. Методику ИЛ подберёт под каждый показатель и согласует с вами в заявке.</span></div>';
     h+='<div class="field"><label for="cq">Количество образцов</label><input type="text" id="cq" data-cu="qty" value="'+esc(c.qty)+'" placeholder="Количество образцов"></div>';
     h+='<div class="field"><label for="cm">Примечание</label><input type="text" id="cm" data-cu="note" value="'+esc(c.note)+'" placeholder="Партия, срок годности, точка отбора"></div></div>';
@@ -358,7 +359,9 @@ function rowsFor(b,startN){
     var gv=vidsOf(g.inds);
     return {n:String(startN+i),obj:b.name,qty:g.qty,vid:gv.length?gv.join(', '):b.vid,
       ind:g.inds.map(function(x){return x.ind}).join('\n'),
-      meth:g.inds.map(function(x){return applyMethPolicy(x.ind,x.meth)}).join('\n'),
+      /* Если методики выбирает заказчик (Раздел II), графа уходит пустой —
+         он вписывает свои. Подставлять выбор лаборатории было бы подлогом. */
+      meth:S.c.methods==='lab'?g.inds.map(function(x){return applyMethPolicy(x.ind,x.meth)}).join('\n'):'',
       samp:b.samp,nd:b.nd,note:b.note};
   });
 }
@@ -693,7 +696,7 @@ document.addEventListener('click',function(e){
   else if(act==='pick'){S.sel=+t.getAttribute('data-id');S.checks=null;$$('#lst .li').forEach(function(b){b.setAttribute('aria-current',String(b===t))});renderDetail();if(window.innerWidth<=860){var d=$('#det');if(d)d.scrollIntoView({block:'start'})}}
   else if(act==='add'){var a=ALL[+t.getAttribute('data-id')];addItem(a,S.checks.on,{qty:S.checks.qty,note:S.checks.note});S.checks=null;toast('Добавлено в заявку');renderDetail();updateBar()}
   else if(act==='tradd'){trAdd()}
-  else if(act==='cuadd'){var c=S.cust;if(!c.name.trim()||!c.inds.trim())return;var inds=c.inds.split(/\n/).map(function(x){return x.trim()}).filter(Boolean).map(function(x){return {ind:x,meth:'Выбирает ИЛ',norm:'Выдать фактический результат / согласовать с ИЛ','on':true}});S.basket.push({uid:S.uid++,kind:'food',name:c.name.trim(),qty:c.qty||'',di:'',note:c.note||'',vid:'Выбирает ИЛ',nd:c.nd||'Выдать фактический результат без указания норматива',samp:'Выбирает ИЛ',form:'Пищевая продукция',inds:inds,hint:noteExample('food'),qhint:qtyExample('food')});S.cust={name:'',nd:'',qty:'',note:'',inds:''};toast('Добавлено в заявку');renderBrowse();updateBar();return}
+  else if(act==='cuadd'){var c=S.cust;if(!c.name.trim()||!c.inds.trim())return;var sp=S.sub==='subpod';/* У субподряда метод и норматив заполняет субподрядная лаборатория, поэтому графы уходят пустыми, а строка помечается в примечаниях. */var inds=c.inds.split(/\n/).map(function(x){return x.trim()}).filter(Boolean).map(function(x){return {ind:x,meth:sp?'':'Выбирает ИЛ',norm:sp?'':'Выдать фактический результат / согласовать с ИЛ','on':true}});S.basket.push({uid:S.uid++,kind:'food',name:c.name.trim(),qty:c.qty||'',di:'',note:sp?('Субподрядные испытания'+(c.note?'; '+c.note:'')):(c.note||''),vid:sp?'':'Выбирает ИЛ',nd:sp?(c.nd||''):(c.nd||'Выдать фактический результат без указания норматива'),samp:sp?'':'Выбирает ИЛ',form:'Пищевая продукция',inds:inds,hint:noteExample('food'),qhint:qtyExample('food')});S.cust={name:'',nd:'',qty:'',note:'',inds:''};toast('Добавлено в заявку');renderBrowse();updateBar();return}
   else if(act==='showall'){var bs=S.basket.filter(function(x){return x.uid===+t.getAttribute('data-u')})[0];if(bs){bs.showAll=!bs.showAll;renderFinal()}}
   else if(act==='del'){var u=+t.getAttribute('data-u');S.basket=S.basket.filter(function(b){return b.uid!==u});renderFinal();updateBar()}
   else if(act==='same-addr'){S.c.actual=S.c.legal;fillInputs()}
