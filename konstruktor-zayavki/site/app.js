@@ -265,7 +265,7 @@ function qtyExample(k){var m={food:'Например: 2',smyv:'Например:
 /* Подсказка примечания берётся по виду испытаний, но набор может задать
    свою — в том числе пустую, чтобы убрать подсказку только у него. */
 function noteHint(a,k){return a&&a.nhint!==undefined&&a.nhint!==null?a.nhint:noteExample(k)}
-function noteExample(k){var m={food:'',smyv:'Точка отбора: цех, инвентарь, руки',water:'',air:'Точка отбора: кабинет №, помещение',med:'Что отбирается, способ стерилизации',cold:'Номер камеры, что хранится, температура',phys:'РМ или помещение, адрес, число точек',dez:'Концентрация рабочего раствора',bio:'Марка и объём камеры',ster:'Что отбирается, способ стерилизации'};return k in m?m[k]:'Пояснения к образцу'}
+function noteExample(k){var m={food:'',smyv:'Точка отбора: цех, инвентарь, руки',water:'',air:'Точка отбора: кабинет №, помещение',med:'Что отбирается, способ стерилизации',cold:'Диапазон температуры',phys:'РМ или помещение, адрес, число точек',dez:'Концентрация рабочего раствора',bio:'Марка и объём камеры',ster:'Что отбирается, способ стерилизации'};return k in m?m[k]:'Пояснения к образцу'}
 function addItem(a,on,extras){
   /* Один и тот же набор можно добавлять несколько раз: заказчику нужны
      отдельные строки под разное количество и разные точки отбора
@@ -419,8 +419,6 @@ function renderFinal(){
   /* Что дальше */
   h+='<h3 style="margin-top:8px">Что делать дальше</h3><div class="info">Проверьте список выше — он равен тому, что попадёт в файл. Скачайте заявку в Word, подпишите и отправьте специалисту по работе с клиентами.</div>';
   h+='<div class="note"><b>Сначала скачайте файл.</b> Страница ничего не сохраняет: после закрытия или перезагрузки вкладки введённое пропадает. Скачайте готовую заявку (кнопка ниже) и сохраните её у себя — все дальнейшие правки вносите уже в скачанном файле в Word.</div>';
-  /* word */
-  h+='<div class="card" style="margin-top:12px"><b>Скачать заявку в Word</b><p class="help" style="color:var(--muted);font-size:13px;margin:4px 0 10px">Готовая заявка в формате .docx: откройте в Word, при необходимости поправьте, напечатайте и подпишите. A4, альбомная ориентация.</p><div class="row"><button class="btn pri" data-act="docx">Скачать Word (.docx)</button></div></div>';
   h+='<div class="tw pv" style="margin-top:12px">'+tableHTML(rows,true)+'</div>';
   /* agreement */
   box.innerHTML=h;
@@ -452,9 +450,22 @@ function xKids(el, name) {
 }
 
 /* ран с текстом; переводы строк становятся мягкими переносами */
+/* Пустые ячейки бланка не несут оформления, а шрифт по умолчанию в нём
+   тематический (Calibri). Там, где копировать не с чего, ставим Times явно. */
+function xTimes(doc) {
+  var rPr = xEl(doc, 'w:rPr');
+  var f = xEl(doc, 'w:rFonts');
+  f.setAttribute('w:ascii', 'Times New Roman');
+  f.setAttribute('w:hAnsi', 'Times New Roman');
+  f.setAttribute('w:cs', 'Times New Roman');
+  rPr.appendChild(f);
+  var sz = xEl(doc, 'w:sz'); sz.setAttribute('w:val', '20'); rPr.appendChild(sz);
+  var szCs = xEl(doc, 'w:szCs'); szCs.setAttribute('w:val', '20'); rPr.appendChild(szCs);
+  return rPr;
+}
 function xRun(doc, text, rPr) {
   var r = xEl(doc, 'w:r');
-  if (rPr) r.appendChild(rPr.cloneNode(true));
+  r.appendChild(rPr ? rPr.cloneNode(true) : xTimes(doc));
   var lines = String(text == null ? '' : text).split('\n');
   for (var i = 0; i < lines.length; i++) {
     if (i) r.appendChild(xEl(doc, 'w:br'));
@@ -622,6 +633,15 @@ function docxData(){
     consent:c.consent,rows:allRows()};
 }
 
+/* Шрифт по умолчанию в бланке задан темой (Calibri): всё без явного
+   оформления печаталось бы ею. Прописываем Times в стилях документа. */
+function timesStyles(xml){
+  return xml.replace(/<w:rPrDefault>[\s\S]*?<\/w:rPrDefault>/,
+    '<w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:eastAsia="Times New Roman"'
+    + ' w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="20"/>'
+    + '<w:szCs w:val="20"/><w:lang w:val="ru-RU" w:eastAsia="ru-RU" w:bidi="ar-SA"/>'
+    + '</w:rPr></w:rPrDefault>');
+}
 function saveDocx(){
   if(typeof JSZip==='undefined'){toast('Библиотека ещё грузится, попробуйте через несколько секунд');return}
   var fn='Заявка '+(S.c.org||'без имени').replace(/[\\\/:*?"<>|]/g,'').slice(0,80)+'.docx';
@@ -629,7 +649,11 @@ function saveDocx(){
     return zip.file('word/document.xml').async('string').then(function(xml){
       zip.file('word/document.xml',fillBlank(xml,docxData()));
       zip.file('word/comments.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:comments xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>');
-      return zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+      var st=zip.file('word/styles.xml');
+      var done=st?st.async('string').then(function(sx){zip.file('word/styles.xml',timesStyles(sx))}):Promise.resolve();
+      return done.then(function(){
+        return zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+      });
     });
   }).then(function(blob){
     var p=window.claude&&window.claude.use?window.claude.use('downloads'):null;

@@ -66,8 +66,9 @@
       </div>
     </div>
     <div class="card" style="margin-top:12px"><h3 style="margin-top:0">Итог</h3>
-      Скачайте файл Word (кнопка выше), подпишите его и отправьте на почту специалисту по работе с клиентами: <a href="mailto:info@laboratoriya-viking.ru"><b>info@laboratoriya-viking.ru</b></a>.
+      Скачайте файл Word (кнопка ниже), подпишите его и отправьте на почту специалисту по работе с клиентами: <a href="mailto:info@viking-lab.ru"><b>info@viking-lab.ru</b></a>.
     </div>
+    <div class="card" style="margin-top:12px"><b>Скачать заявку в Word</b><p class="help" style="color:var(--muted);font-size:13px;margin:4px 0 10px">Готовая заявка в формате .docx: откройте в Word, при необходимости поправьте, напечатайте и подпишите. A4, альбомная ориентация.</p><div class="row"><button class="btn pri" data-act="docx">Скачать Word (.docx)</button></div></div>
   </div>
 </section>
 
