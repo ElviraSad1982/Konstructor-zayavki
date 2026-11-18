@@ -535,12 +535,21 @@ function renderFree(sp){
   h+='<div class="field"><label for="cq">Количество образцов</label><input type="text" id="cq" data-cu="qty" value="'+esc(c.qty)+'" placeholder="'+(sp?'':'Количество образцов')+'"></div>';
   h+='<div class="field"><label for="cm">Примечание</label><input type="text" id="cm" data-cu="note" value="'+esc(c.note)+'" placeholder="'+(sp?'':'Партия, срок годности, точка отбора')+'"></div></div>';
   if(sp){
-    h+='<div class="field full" style="margin-top:10px"><span class="legend">Готовые наборы показателей</span>';
-    h+='<div class="row">'+SAFE_SETS.map(function(g){return '<button class="btn sm" data-act="spadd" data-g="'+g.k+'">'+esc(g.t)+'</button>'}).join('')+'</div>';
-    h+='<span class="help">Нажмите — показатели добавятся в список выше. Лишнее удалите вручную.</span></div>';
+    var cur=String(c.inds||'').split(/\n/).map(function(x){return x.trim()}).filter(Boolean);
+    h+='<div class="field full" style="margin-top:10px"><span class="legend">Показатели безопасности (ТР ТС 021, Приложение 3)</span>';
+    SAFE_SETS.forEach(function(g){
+      h+='<div style="margin:8px 0 3px;font-size:13px;color:var(--muted)">'+esc(g.t)+'</div><div class="choices">';
+      g.inds.forEach(function(x){
+        h+='<label class="choice"><input type="checkbox" data-act="safechk" data-i="'+esc(x)+'"'+(cur.indexOf(x)>=0?' checked':'')+'><span>'+esc(x)+'</span></label>';
+      });
+      h+='</div>';
+    });
+    h+='<span class="help">Отмечайте нужные — они попадут в список показателей выше. Там же можно дописать свои.</span></div>';
   }
   var ok=c.name.trim()&&c.inds.trim();
-  h+='<div class="row" style="margin-top:12px"><button class="btn pri" data-act="cuadd"'+(ok?'':' disabled')+'>Добавить в заявку</button><span style="color:var(--muted);font-size:13px">НД отбора: ГОСТ 31904-2012 (микробиология) / ГОСТ Р 54607.1-2011 (органолептика), подбирает ИЛ</span></div>';
+  /* Кнопка гасла молча, и курсор «нельзя» читался как поломка. */
+  var why=!c.name.trim()?(sp?'Впишите объект испытаний':'Впишите наименование продукции'):(!c.inds.trim()?'Отметьте или впишите хотя бы один показатель':'');
+  h+='<div class="row" style="margin-top:12px"><button class="btn pri" data-act="cuadd"'+(ok?'':' disabled')+'>Добавить в заявку</button><span style="color:var(--muted);font-size:13px">'+(why?esc(why):'НД отбора: ГОСТ 31904-2012 (микробиология) / ГОСТ Р 54607.1-2011 (органолептика), подбирает ИЛ')+'</span></div>';
   return h;
 }
 
@@ -709,7 +718,9 @@ function renderFinal(){
   h+='<h3>Строки заявки</h3><div class="items">';
   S.basket.forEach(function(b,i){
     var qh=b.qhint||qtyExample(b.kind), nh=b.hint!==undefined&&b.hint!==null?b.hint:noteExample(b.kind);
-    h+='<div class="item"><div class="row spread"><b>'+(i+1)+'. '+esc(b.name)+'</b><button class="btn sm ghost" data-act="del" data-u="'+b.uid+'">Удалить из заявки</button></div>';
+    /* В одной заявке соседствуют свои испытания и субподряд — помечаем, чтобы было видно, какие строки уходят в другую лабораторию. */
+    var isSub=/^Субподрядные испытания/.test(b.note||'');
+    h+='<div class="item"><div class="row spread"><b>'+(i+1)+'. '+esc(b.name)+(isSub?' <span class="chip warn">субподряд</span>':'')+'</b><button class="btn sm ghost" data-act="del" data-u="'+b.uid+'">Удалить из заявки</button></div>';
     h+='<div class="grid2"><div class="field"><label for="n'+b.uid+'">Название по этикетке или ТУ</label><input type="text" id="n'+b.uid+'" data-b="name" data-u="'+b.uid+'" value="'+esc(b.name)+'"></div>';
     h+='<div class="field"><label for="q'+b.uid+'">'+(b.kind==='phys'?'Количество измерений':'Количество образцов')+'</label><input type="text" id="q'+b.uid+'" data-b="qty" data-u="'+b.uid+'" value="'+esc(b.qty)+'" placeholder="'+esc(qh)+'"></div>';
     h+='<div class="field full"><label for="m'+b.uid+'">Примечания</label><input type="text" id="m'+b.uid+'" data-b="note" data-u="'+b.uid+'" value="'+esc(b.note)+'" placeholder="'+esc(nh)+'"></div>';
@@ -1049,6 +1060,15 @@ document.addEventListener('change',function(e){
   if(t.id==='trg'){S.trGrp=t.value;renderBrowse()}
   if(t.id==='tri'){S.trInd=t.value;renderBrowse()}
   var act=t.getAttribute&&t.getAttribute('data-act');
+  if(act==='safechk'){
+    var nm=t.getAttribute('data-i');
+    var list=String(S.cust.inds||'').split(/\n/).map(function(x){return x.trim()}).filter(Boolean);
+    var at=list.indexOf(nm);
+    if(t.checked){if(at<0)list.push(nm)}else if(at>=0)list.splice(at,1);
+    S.cust.inds=list.join('\n');
+    renderBrowse();
+    return;
+  }
   if(act==='chk'){S.checks.on[+t.getAttribute('data-i')]=t.checked;renderDetail()}
   if(act==='trchk'){var i=t.getAttribute('data-i');if(t.checked)S.trSel[i]=1;else delete S.trSel[i];renderBrowse()}
   if(act==='bchk'){var b=S.basket.filter(function(x){return x.uid===+t.getAttribute('data-u')})[0];b.inds[+t.getAttribute('data-j')].on=t.checked;if(!b.ndEdited&&b.ndSrc)b.nd=ndFor(b.ndSrc,vidsOf(b.inds.filter(function(x){return x.on})));renderFinal();updateBar()}
