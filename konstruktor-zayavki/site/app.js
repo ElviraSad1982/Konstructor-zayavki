@@ -150,7 +150,7 @@ function renderBrowse(){
   if(searching)html+='<div class="info">Поиск идёт по всем категориям этой плитки — категория каждого набора указана в списке. Очистите поиск, чтобы вернуться к выбранной категории.</div>';
   else if(curSub&&curSub.hint)html+='<div class="info">'+esc(curSub.hint)+'</div>';
   if(S.sub==='subpod'){box.innerHTML=html+renderFree(true);return}
-  html+='<div class="field" style="margin-bottom:12px"><label for="sq">Поиск по названию или показателю</label><input type="search" id="sq" value="'+esc(S.sq)+'" placeholder="Например: салат, молоко, микроклимат" autocomplete="off"></div>';
+  html+='<div class="field" style="margin-bottom:12px"><label for="sq">Поиск по названию или показателю</label><input type="search" id="sq" value="'+esc(S.sq)+'" placeholder="'+esc(sqHint())+'" autocomplete="off"></div>';
   html+='<div class="work"><div><div class="help" style="color:var(--muted);font-size:12.5px;margin-bottom:6px">Найдено наборов: '+list.length+'</div><div class="list" id="lst">';
   if(!list.length)html+='<div class="empty">'+(searching?'По этому запросу в плитке ничего нет. Попробуйте другое слово или откройте «Не нашли продукт?» для подбора по ТР ТС / своему НД.':'В этой категории пока пусто. Выберите другую категорию или воспользуйтесь поиском.')+'</div>';
   list.slice(0,300).forEach(function(a){var sub=a.cat;html+='<button class="li" data-act="pick" data-id="'+a.id+'" aria-current="'+(S.sel===a.id)+'"><span class="t">'+esc(a.name)+'</span><span class="m">'+esc(sub)+' · показателей: '+a.items.length+'</span></button>'});
@@ -346,7 +346,25 @@ function catKind(a){var c=a.cat||'';if(c==='Смывы')return 'smyv';if(c==='В
 function qtyExample(k){var m={food:'Например: 2',smyv:'Например: 10',water:'Например: 2',air:'Например: 5',med:'Например: 5',cold:'Например: 1',phys:'Например: 5',dez:'',bio:'Например: 1',ster:'Например: 5'};return k in m?m[k]:'Например: 1'}
 /* Подсказка примечания берётся по виду испытаний, но набор может задать
    свою — в том числе пустую, чтобы убрать подсказку только у него. */
-function noteHint(a,k){return a&&a.nhint!==undefined&&a.nhint!==null?a.nhint:noteExample(k)}
+/* Подсказка поиска — под выбранную плитку: в ЛПУ «салат, молоко»
+   читались как ошибка выбора объекта. */
+function sqHint(){
+  var m={food:'Например: салат, молоко, смывы',
+         med:'Например: воздух, эндоскоп, стерильность',
+         kosm:'Например: воздух, смывы, стерильность',
+         pool:'Например: вода, смывы, микроклимат',
+         cold:'Например: воздух, соскоб, плесени',
+         ff:'Например: микроклимат, шум, освещённость'};
+  return S.mode in m?m[S.mode]:'Например: название объекта или показателя';
+}
+function noteHint(a,k){
+  var h=a&&a.nhint!==undefined&&a.nhint!==null?a.nhint:noteExample(k);
+  /* Подсказка смывов писалась под пищевое производство. В ЛПУ и
+     косметологии цехов и инвентаря нет, заказчиков это путало —
+     в этих плитках такую подсказку не показываем. */
+  if((S.mode==='med'||S.mode==='kosm')&&/цех/i.test(h))return '';
+  return h;
+}
 function noteExample(k){var m={food:'',smyv:'Точка отбора: цех, инвентарь, руки',water:'',air:'Точка отбора: кабинет №, помещение',med:'Что отбирается, способ стерилизации',cold:'Диапазон температуры',phys:'РМ или помещение, адрес, число точек',dez:'Концентрация рабочего раствора',bio:'Марка и объём камеры',ster:'Что отбирается, способ стерилизации'};return k in m?m[k]:'Пояснения к образцу'}
 function addItem(a,on,extras){
   /* Один и тот же набор можно добавлять несколько раз: заказчику нужны
