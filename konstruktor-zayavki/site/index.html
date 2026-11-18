@@ -374,7 +374,7 @@ function modeFilter(mode,subId){
   });
 }
 
-var S={tab:'zakazchik',mode:'food',sub:'',sq:'',sel:null,checks:null,basket:[],uid:1,example:true,trSel:{},trGrp:'',trInd:'',trQ:'',cust:{name:'',nd:'',qty:'',note:'',inds:''},
+var S={tab:'zakazchik',mode:'food',sub:'',sq:'',sel:null,checks:null,basket:[],uid:1,ask:null,safe:null,example:true,trSel:{},trGrp:'',trInd:'',trQ:'',cust:{name:'',nd:'',qty:'',note:'',inds:''},
  c:{org:'ООО «Пример» (вымышленная организация)',inn:'0000000000',legal:'101000, г. Москва, ул. Примерная, д. 1',actual:'101000, г. Москва, ул. Примерная, д. 1',contact:'Иванова Мария Петровна, технолог, +7 900 000-00-00, example@example.ru',cno:'00/00-01/2026',cdate:'01.01.2026',place:'101000, г. Москва, ул. Примерная, д. 1, 2 этаж, производственный цех',placeContact:'Иванова Мария Петровна, технолог, +7 900 000-00-00',purpose:'Производственный контроль',sampler:'lab',methods:'lab',unc:'Нет',concl:'Нет',agree:{oa:true,meth:true,color:true,samples:true,pay:true,terms:true,return:true,pdn:true},discardMode:'without',consent:'yes'}};
 
 var CH={
@@ -451,6 +451,50 @@ function renderBrowse(){
   if(S.sel!==null&&!list.some(function(a){return a.id===S.sel}))S.sel=null;
   renderDetail();
 }
+/* Заказчики часто заказывают микробиологию у нас, а показатели безопасности
+   отдают в субподряд, и обе части идут одной заявкой. Поэтому после
+   добавления микробиологии спрашиваем про безопасность и вставляем её
+   строкой сразу за микробиологией — по тому же объекту, друг за другом. */
+function basketBy(u){return S.basket.filter(function(x){return x.uid===u})[0]}
+function safeSel0(){var sel={};SAFE_SETS[0].inds.forEach(function(x){sel[x]=true});return sel}
+function isSubRow(b){return /^Субподрядные испытания/.test(b.note||'')}
+function askCard(){
+  var b=basketBy(S.ask);if(!b)return '';
+  var decl=S.c.purpose==='Декларирование';
+  var h='<div class="card"><h3>Нужны показатели безопасности?</h3>';
+  h+='<div class="info">Добавлена микробиология по «'+esc(b.name)+'». '+(decl?'Цель испытаний — декларирование, а для него':'Если испытания нужны в целях декларирования, то')+' по ТР ТС 021/2011 нормируются ещё и показатели безопасности: токсичные элементы, радионуклиды, микотоксины, пестициды. Их ИЛ ООО «ВИКИНГ» передаёт субподрядной лаборатории — в заявке они встанут строкой сразу за микробиологией по тому же объекту.</div>';
+  h+='<div class="row" style="margin-top:12px"><button class="btn pri" data-act="askyes">Да, выбрать показатели</button><button class="btn ghost" data-act="askno">Нет, только микробиология</button></div></div>';
+  return h;
+}
+function safeCard(){
+  var b=basketBy(S.safe&&S.safe.uid);if(!b)return '';
+  var sel=S.safe.sel;
+  var h='<div class="card"><h3>Показатели безопасности — '+esc(b.name)+'</h3>';
+  h+='<div class="info">Отметьте то, что нормируется для вашей продукции (ТР ТС 021/2011, Приложение 3). Токсичные элементы отмечены заранее — они нормируются почти для всей пищевой продукции. Графы «Метод» и «НД отбора» остаются пустыми: их заполняет субподрядная лаборатория.</div>';
+  SAFE_SETS.forEach(function(g){
+    h+='<div style="margin:8px 0 3px;font-size:13px;color:var(--muted)">'+esc(g.t)+'</div><div class="choices">';
+    g.inds.forEach(function(x){h+='<label class="choice"><input type="checkbox" data-act="sfchk" data-i="'+esc(x)+'"'+(sel[x]?' checked':'')+'><span>'+esc(x)+'</span></label>'});
+    h+='</div>';
+  });
+  var n=Object.keys(sel).filter(function(k){return sel[k]}).length;
+  h+='<div class="row" style="margin-top:12px"><button class="btn pri" data-act="sfadd"'+(n?'':' disabled')+'>Добавить в заявку ('+n+' показ.)</button><button class="btn ghost" data-act="sfno">Отмена</button><span style="color:var(--muted);font-size:13px">'+(n?'Встанет строкой сразу за микробиологией по «'+esc(b.name)+'»':'Отметьте хотя бы один показатель')+'</span></div></div>';
+  return h;
+}
+function safeAdd(){
+  var i=-1;S.basket.forEach(function(x,k){if(x.uid===S.safe.uid)i=k});
+  if(i<0){S.safe=null;return}
+  var src=S.basket[i],sel=S.safe.sel,inds=[];
+  SAFE_SETS.forEach(function(g){g.inds.forEach(function(x){if(sel[x])inds.push({ind:x,meth:'',norm:'',on:true})})});
+  if(!inds.length){S.safe=null;return}
+  S.basket.splice(i+1,0,{uid:S.uid++,kind:'food',name:src.name,qty:src.qty||'',di:'',
+    note:'Субподрядные испытания (показатели безопасности)',vid:'',
+    nd:'ТР ТС 021/2011, Приложение 3',samp:'',form:'Пищевая продукция',
+    inds:inds,hint:'',qhint:qtyExample('food')});
+  S.safe=null;toast('Показатели безопасности встали следом за микробиологией');
+}
+/* вопрос и подборка живут и в «Выборе», и в «Заявке» — рисуем там, где заказчик */
+function reask(){if(S.tab==='zayavka')renderFinal();else renderDetail()}
+
 function renderDetail(){
   var det=$('#det');if(!det)return;
   if(S.sel===null){det.innerHTML='<div class="card empty">Выберите строку слева. Здесь появятся показатели, методы и нормативы.</div>';return}
@@ -477,6 +521,7 @@ function renderDetail(){
   /* У смывов и воздуха показатели не отмечены заранее, поэтому пустое
      добавление — лёгкая ошибка: блокируем кнопку, пока ничего не выбрано. */
   h+='<div class="row" style="margin-top:12px"><button class="btn pri" data-act="add" data-id="'+a.id+'"'+(n?'':' disabled')+'>Добавить в заявку ('+n+' показ.)</button><span style="color:var(--muted);font-size:13px">'+(n?'Метод отбора: '+esc(a.samp):(S.basket.length?'Отметьте следующий показатель':'Отметьте нужные показатели'))+'</span></div></div>';
+  if(S.safe)h=safeCard()+h;else if(S.ask)h=askCard()+h;
   det.innerHTML=h;
 }
 
@@ -744,7 +789,15 @@ function renderFinal(){
     if(!anyOn){
       h+='<div class="note" style="margin:8px 0 0">Не отмечен ни один показатель — эта строка в заявку не попадёт.</div>';
     }
-    h+='<div class="chips"><span class="chip">отбор: '+esc(b.samp)+'</span></div>';
+    if(S.safe&&S.safe.uid===b.uid){h+=safeCard()}
+    else if(b.kind==='food'&&!isSub){
+      var nx=S.basket[i+1];
+      /* кнопку убираем, если безопасность по этому объекту уже стоит следом */
+      if(!(nx&&isSubRow(nx)&&nx.name===b.name)){
+        h+='<div class="row" style="margin:8px 0 0"><button class="btn sm ghost" data-act="safeopen" data-u="'+b.uid+'">+ Показатели безопасности (субподряд)</button><span style="color:var(--muted);font-size:13px">для декларирования — встанут строкой следом</span></div>';
+      }
+    }
+    h+='<div class="chips"><span class="chip">отбор: '+esc(b.samp)+(b.samp?'':'—')+'</span></div>';
     h+='</div>';
   });
   h+='</div><div class="row"><button class="btn" data-act="goto" data-to="vybor">Добавить ещё</button></div>';
@@ -1023,7 +1076,7 @@ document.addEventListener('click',function(e){
   else if(act==='mode'){S.mode=t.getAttribute('data-m');S.sub='';S.sel=null;S.sq='';renderBrowse()}
   else if(act==='sub'){S.sq='';S.sub=t.getAttribute('data-s');S.sel=null;renderBrowse()}
   else if(act==='pick'){S.sel=+t.getAttribute('data-id');S.checks=null;$$('#lst .li').forEach(function(b){b.setAttribute('aria-current',String(b===t))});renderDetail();if(window.innerWidth<=860){var d=$('#det');if(d)d.scrollIntoView({block:'start'})}}
-  else if(act==='add'){var a=ALL[+t.getAttribute('data-id')];addItem(a,S.checks.on,{qty:S.checks.qty,note:S.checks.note});S.checks=null;toast('Добавлено. Отметьте следующий показатель — он уйдёт отдельной строкой');renderDetail();updateBar()}
+  else if(act==='add'){var a=ALL[+t.getAttribute('data-id')];var itn=addItem(a,S.checks.on,{qty:S.checks.qty,note:S.checks.note});S.checks=null;if(catKind(a)==='food'&&!S.safe)S.ask=itn.uid;toast('Добавлено. Отметьте следующий показатель — он уйдёт отдельной строкой');renderDetail();updateBar()}
   else if(act==='tradd'){trAdd()}
   else if(act==='spadd'){
     var g=SAFE_SETS.filter(function(x){return x.k===t.getAttribute('data-g')})[0];
@@ -1034,11 +1087,16 @@ document.addEventListener('click',function(e){
     renderBrowse();
   }
   else if(act==='cuadd'){var c=S.cust;if(!c.name.trim()||!c.inds.trim())return;var sp=S.sub==='subpod';/* У субподряда метод и норматив заполняет субподрядная лаборатория, поэтому графы уходят пустыми, а строка помечается в примечаниях. */var inds=c.inds.split(/\n/).map(function(x){return x.trim()}).filter(Boolean).map(function(x){return {ind:x,meth:sp?'':'Выбирает ИЛ',norm:sp?'':'Выдать фактический результат / согласовать с ИЛ','on':true}});S.basket.push({uid:S.uid++,kind:'food',name:c.name.trim(),qty:c.qty||'',di:'',note:sp?('Субподрядные испытания'+(c.note?'; '+c.note:'')):(c.note||''),vid:sp?'':'Выбирает ИЛ',nd:sp?(c.nd||''):(c.nd||'Выдать фактический результат без указания норматива'),samp:sp?'':'Выбирает ИЛ',form:'Пищевая продукция',inds:inds,hint:noteExample('food'),qhint:qtyExample('food')});S.cust={name:'',nd:'',qty:'',note:'',inds:''};toast('Добавлено в заявку');renderBrowse();updateBar();return}
+  else if(act==='askyes'){S.safe={uid:S.ask,sel:safeSel0()};S.ask=null;reask();return}
+  else if(act==='askno'){S.ask=null;reask();return}
+  else if(act==='safeopen'){S.ask=null;S.safe={uid:+t.getAttribute('data-u'),sel:safeSel0()};reask();return}
+  else if(act==='sfno'){S.safe=null;reask();return}
+  else if(act==='sfadd'){safeAdd();reask();updateBar();return}
   else if(act==='showall'){var bs=S.basket.filter(function(x){return x.uid===+t.getAttribute('data-u')})[0];if(bs){bs.showAll=!bs.showAll;renderFinal()}}
   else if(act==='del'){var u=+t.getAttribute('data-u');S.basket=S.basket.filter(function(b){return b.uid!==u});renderFinal();updateBar()}
   else if(act==='same-addr'){S.c.actual=S.c.legal;fillInputs()}
   else if(act==='place-actual'){S.c.place=S.c.actual;fillInputs()}
-  else if(act==='clear-example'){S.c=emptyCustomer();S.basket=[];S.example=false;fillInputs();updateBar()}
+  else if(act==='clear-example'){S.c=emptyCustomer();S.basket=[];S.ask=null;S.safe=null;S.example=false;fillInputs();updateBar()}
 });
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){var lw=document.getElementById('letterWrap');if(lw&&!lw.hidden){lw.hidden=true;document.body.style.overflow=''}}});
 document.addEventListener('input',function(e){
@@ -1072,6 +1130,7 @@ document.addEventListener('change',function(e){
   }
   if(act==='chk'){S.checks.on[+t.getAttribute('data-i')]=t.checked;renderDetail()}
   if(act==='trchk'){var i=t.getAttribute('data-i');if(t.checked)S.trSel[i]=1;else delete S.trSel[i];renderBrowse()}
+  if(act==='sfchk'&&S.safe){S.safe.sel[t.getAttribute('data-i')]=t.checked;reask();return}
   if(act==='bchk'){var b=S.basket.filter(function(x){return x.uid===+t.getAttribute('data-u')})[0];b.inds[+t.getAttribute('data-j')].on=t.checked;if(!b.ndEdited&&b.ndSrc)b.nd=ndFor(b.ndSrc,vidsOf(b.inds.filter(function(x){return x.on})));renderFinal();updateBar()}
 });
 
