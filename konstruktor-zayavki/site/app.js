@@ -10,7 +10,7 @@ var ALL=[];
 // FOOD: has obj field (list of mode ids where this food appears)
 FOOD.forEach(function(f){ALL.push({kind:'food',cat:f.cat,obj:f.obj||['prod','horeca'],name:f.name,nd:f.nd||'Выдать фактический результат без указания норматива',decl:!!f.decl,vid:f.vid||'Микробиология',samp:f.samp||'ГОСТ 31904-2012',form:f.form||'Пищевая продукция',note:f.note||'',items:f.items.map(function(i){return {ind:i.ind,meth:i.meth||'Выбирает ИЛ',norm:i.norm,on:i.on!==false}})})});
 // ENV: has obj field
-ENV.forEach(function(e){ALL.push({kind:'env',cat:e.cat,obj:e.obj||[],name:e.name,nd:e.nd,decl:false,vid:e.vid,samp:e.samp,form:e.form,note:e.note||'',nhint:e.nhint,items:e.items.map(function(i){return {ind:i.ind,meth:i.meth,norm:i.norm,vid:i.vid,on:i.on!==false}})})});
+ENV.forEach(function(e){ALL.push({kind:'env',cat:e.cat,obj:e.obj||[],name:e.name,nd:e.nd,decl:false,vid:e.vid,samp:e.samp,form:e.form,note:e.note||'',nhint:e.nhint,items:e.items.map(function(i){return {ind:i.ind,meth:i.meth,norm:i.norm,vid:i.vid,samp:i.samp,on:i.on!==false}})})});
 // FX: физико-химия и органолептика из области аккредитации (карточки по категориям продукции)
 FX.forEach(function(e){ALL.push({kind:'fx',cat:e.cat,obj:e.obj||['food'],name:e.name,nd:e.nd,decl:false,vid:e.vid,samp:e.samp,form:e.form,note:e.note||'',items:e.items.map(function(i){return {ind:i.ind,meth:i.meth||'Выбирает ИЛ',norm:i.norm,rang:i.rang||'',on:false}})})});
 ALL.forEach(function(a,i){a.id=i;a.hay=norm(a.name+' '+a.nd+' '+a.cat+' '+a.items.map(function(x){return x.ind}).join(' '))});
@@ -228,7 +228,7 @@ function renderDetail(){
   h+='<div class="grid2" style="margin-top:12px"><div class="field"><label for="dqty">'+qlab+'</label><input type="text" id="dqty" data-dq="qty" value="'+esc(S.checks.qty)+'" placeholder="'+esc(S.checks.qhint)+'"></div><div class="field"><label for="dnote">Примечание</label><input type="text" id="dnote" data-dq="note" value="'+esc(S.checks.note)+'" placeholder="'+esc(S.checks.nhint||'')+'"></div></div>';
   /* У смывов и воздуха показатели не отмечены заранее, поэтому пустое
      добавление — лёгкая ошибка: блокируем кнопку, пока ничего не выбрано. */
-  h+='<div class="row" style="margin-top:12px"><button class="btn pri" data-act="add" data-id="'+a.id+'"'+(n?'':' disabled')+'>Добавить в заявку ('+n+' показ.)</button><span style="color:var(--muted);font-size:13px">'+(n?'Метод отбора: '+esc(a.samp):(S.basket.length?'Отметьте следующий показатель':'Отметьте нужные показатели'))+'</span></div></div>';
+  h+='<div class="row" style="margin-top:12px"><button class="btn pri" data-act="add" data-id="'+a.id+'"'+(n?'':' disabled')+'>Добавить в заявку ('+n+' показ.)</button><span style="color:var(--muted);font-size:13px">'+(n?'Метод отбора: '+esc(sampsOf(a.items.filter(function(x,i){return S.checks.on[i]}),a).join(' + ')):(S.basket.length?'Отметьте следующий показатель':'Отметьте нужные показатели'))+'</span></div></div>';
   if(S.safe)h=safeCard()+h;else if(S.ask)h=askCard()+h;
   det.innerHTML=h;
 }
@@ -372,7 +372,7 @@ function addItem(a,on,extras){
      (например 5 смывов на БГКП и 3 на стафилококк). */
   /* В карточку кладём весь набор, а не только отмеченное на шаге 2:
      иначе забытый показатель нельзя добавить, не собирая набор заново. */
-  var inds=a.items.map(function(it,i){return {ind:it.ind,meth:it.meth,norm:it.norm,vid:it.vid,on:!!on[i]}});
+  var inds=a.items.map(function(it,i){return {ind:it.ind,meth:it.meth,norm:it.norm,vid:it.vid,samp:it.samp,on:!!on[i]}});
   var k=catKind(a);
   extras=extras||{};
   var it={uid:S.uid++,kind:k,name:a.name,qty:extras.qty||'',di:'',note:extras.note||'',vid:a.vid,ndSrc:a.nd,nd:ndFor(a.nd,vidsOf(inds.filter(function(x){return x.on}))),samp:a.samp,form:a.form,inds:inds,hint:noteHint(a,k),qhint:qtyExample(k)};
@@ -445,6 +445,15 @@ function ndFor(nd,vids){
   return m[1]+'('+keep.join('; ')+')'+m[3];
 }
 
+/* У воздуха дрожжи и плесени идут по старой МУК 4.2.2942-11: новая 4180-25
+   по этому пункту не эквивалентна, поэтому и отбор под них — по старой,
+   отменённой методике. Поэтому метод отбора берём по отмеченным
+   показателям, а не один на весь набор. */
+function sampsOf(inds,b){
+  var out=[];
+  inds.forEach(function(x){var v=x.samp||b.samp;if(v&&out.indexOf(v)<0)out.push(v)});
+  return out;
+}
 function rowsFor(b,startN){
   var on=b.inds.filter(function(x){return x.on});
   if(!on.length)return [];
@@ -461,7 +470,7 @@ function rowsFor(b,startN){
       /* Если методики выбирает заказчик (Раздел II), графа уходит пустой —
          он вписывает свои. Подставлять выбор лаборатории было бы подлогом. */
       meth:S.c.methods==='lab'?g.inds.map(function(x){return applyMethPolicy(x.ind,x.meth)}).join('\n'):'',
-      samp:b.samp,nd:b.nd,note:b.note};
+      samp:sampsOf(g.inds,b).join('\n')||b.samp,nd:b.nd,note:b.note};
   });
 }
 function allRows(){
@@ -523,7 +532,8 @@ function renderFinal(){
         h+='<div class="row" style="margin:8px 0 0"><button class="btn sm ghost" data-act="safeopen" data-u="'+b.uid+'">+ Показатели безопасности (субподряд)</button><span style="color:var(--muted);font-size:13px">для декларирования — встанут строкой следом</span></div>';
       }
     }
-    h+='<div class="chips"><span class="chip">отбор: '+esc(b.samp)+(b.samp?'':'—')+'</span></div>';
+    var bsamp=sampsOf(b.inds.filter(function(x){return x.on}),b);
+    h+='<div class="chips"><span class="chip">отбор: '+esc(bsamp.join(' + ')||b.samp||'—')+'</span></div>';
     h+='</div>';
   });
   h+='</div><div class="row"><button class="btn" data-act="goto" data-to="vybor">Добавить ещё</button></div>';
